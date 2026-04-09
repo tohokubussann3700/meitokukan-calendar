@@ -129,7 +129,7 @@ body{font-family:'Hiragino Kaku Gothic Pro','Yu Gothic',Meiryo,sans-serif;backgr
 <script>
 // ============================================================
 // ★ GASデプロイ後、ここにURLを貼り付けてください ★
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbzLN3azGgmg6TlWsJiACcwp5ZHnJMK8yex8LGwFLEJJgoFvpm2lEGHIWUELGRxtUg4b/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxSJ3DmujWAhSRY_T02IitoKSi1Z_7EdJsmZQzlLBXrB8gDTZbDf8I62Pj6JTIy7xfWFw/exec';
 // ============================================================
 
 const LOTS=['駐車場2','駐車場3','駐車場4','駐車場9'];
@@ -189,7 +189,7 @@ function renderCal(){
   const cp=document.getElementById('calPanel');
   let html='';
   if(GAS_URL.includes('ここに')){
-    html+=`<div class="setup-banner" style="margin:10px"><strong>★ GAS URLの設定が必要です（データ共有を使う場合）</strong>GASをデプロイしてURLを取得後、このHTMLの <code>const GAS_URL = 'https://script.google.com/macros/s/AKfycbzLN3azGgmg6TlWsJiACcwp5ZHnJMK8yex8LGwFLEJJgoFvpm2lEGHIWUELGRxtUg4b/exec';</code> を書き換えてGitHubにアップロードしてください。<br>設定前でもカレンダー閲覧・ローカル保存は利用できます。</div>`;
+    html+=`<div class="setup-banner" style="margin:10px"><strong>★ GAS URLの設定が必要です（データ共有を使う場合）</strong>GASをデプロイしてURLを取得後、このHTMLの <code>const GAS_URL = 'https://script.google.com/macros/s/AKfycbxSJ3DmujWAhSRY_T02IitoKSi1Z_7EdJsmZQzlLBXrB8gDTZbDf8I62Pj6JTIy7xfWFw/exec';</code> を書き換えてGitHubにアップロードしてください。<br>設定前でもカレンダー閲覧・ローカル保存は利用できます。</div>`;
   }
   MONTHS.forEach(([y,m,mname])=>{
     const days=daysInMonth(y,m),fd=firstDow(y,m);
