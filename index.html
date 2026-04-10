@@ -49,6 +49,7 @@ body{font-family:'Hiragino Kaku Gothic Pro','Yu Gothic',Meiryo,sans-serif;backgr
 .dt{font-size:9px;padding:1px 3px;border-radius:2px;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dt-closed{background:#fde8e8;color:#801515}.dt-teiji{background:#fff3cd;color:#7c5c00}
 .dt-tsushin{background:#d4edda;color:#145c2a}.dt-hol{background:#fde8e8;color:#801515}.dt-vac{background:#fff3cd;color:#7c5c00}
+.dt-sustina{background:#e8d5f5;color:#5b1a8a}
 .park-dot{position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%}
 .park-dot.partial{background:#ef9f27}.park-dot.busy{background:#e24b4a}.park-dot.avail{background:#1d9e75}
 .park-header{padding:14px 16px;border-bottom:1px solid #dde5ee;background:#1a3a5c;color:#fff;position:sticky;top:0;z-index:10}
@@ -87,6 +88,8 @@ body{font-family:'Hiragino Kaku Gothic Pro','Yu Gothic',Meiryo,sans-serif;backgr
 .type-btn.sel-teiji{background:#fff3cd;color:#7c5c00;border-color:#e6c800;font-weight:700}
 .type-btn.sel-tsushin{background:#d4edda;color:#145c2a;border-color:#7ecf9c;font-weight:700}
 .type-btn.sel-closed{background:#fde8e8;color:#801515;border-color:#f5a0a0;font-weight:700}
+.type-btn.sel-sustina{background:#e8d5f5;color:#5b1a8a;border-color:#b07ecf;font-weight:700}
+.ev-sustina{background:#e8d5f5;color:#5b1a8a}
 .empty-msg{font-size:11px;color:#99aabb;padding:4px 2px}
 .setup-banner{background:#fff3cd;border:1px solid #e6c800;border-radius:8px;padding:12px 16px;margin:10px 0;font-size:12px;color:#7c5c00;line-height:1.6}
 .setup-banner strong{display:block;margin-bottom:4px;font-size:13px}
@@ -96,6 +99,8 @@ body{font-family:'Hiragino Kaku Gothic Pro','Yu Gothic',Meiryo,sans-serif;backgr
 .login-logo{font-size:16px;font-weight:700;color:#1a3a5c;margin-bottom:4px;letter-spacing:.05em}
 .login-sub{font-size:11px;color:#8899aa;margin-bottom:24px}
 .login-label{font-size:11px;font-weight:700;color:#556677;text-align:left;display:block;margin-bottom:4px}
+.login-select{width:100%;padding:10px 12px;border:1.5px solid #c8d8ea;border-radius:8px;font-size:13px;font-family:inherit;margin-bottom:8px;outline:none;background:#fff;color:#1a2a3a;cursor:pointer}
+.login-select:focus{border-color:#1a3a5c}
 .login-input{width:100%;padding:10px 12px;border:1.5px solid #c8d8ea;border-radius:8px;font-size:18px;text-align:center;letter-spacing:.3em;font-family:inherit;margin-bottom:8px;outline:none}
 .login-input:focus{border-color:#1a3a5c}
 .login-btn{width:100%;padding:11px;background:#1a3a5c;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px}
@@ -108,7 +113,16 @@ body{font-family:'Hiragino Kaku Gothic Pro','Yu Gothic',Meiryo,sans-serif;backgr
   <div class="login-box">
     <div class="login-logo">秋田明徳館高校</div>
     <div class="login-sub">統合カレンダー　令和8年度</div>
-    <label class="login-label">パスワード</label>
+    <label class="login-label">アカウント</label>
+    <select class="login-select" id="loginAccount">
+      <option value="">-- 選択してください --</option>
+      <option value="団体A">団体A</option>
+      <option value="団体B">団体B</option>
+      <option value="団体C">団体C</option>
+      <option value="団体D">団体D</option>
+      <option value="団体E">団体E</option>
+    </select>
+    <label class="login-label" style="margin-top:12px">パスワード</label>
     <input class="login-input" type="password" id="loginInput" placeholder="●●●●" maxlength="20" onkeydown="if(event.key==='Enter')doLogin()" />
     <button class="login-btn" onclick="doLogin()">ログイン</button>
     <div class="login-error" id="loginError"></div>
@@ -120,9 +134,12 @@ body{font-family:'Hiragino Kaku Gothic Pro','Yu Gothic',Meiryo,sans-serif;backgr
     <h1>秋田明徳館高校　統合カレンダー　令和8年度</h1>
     <p>年間行事予定（定時制・通信制）＋ 駐車場予約システム</p>
   </div>
-  <div class="sync-status" id="syncStatus">
-    <div class="sync-dot loading" id="syncDot"></div>
-    <span id="syncText">接続中...</span>
+  <div style="display:flex;align-items:center;gap:8px">
+    <div style="font-size:11px;background:rgba(255,255,255,.15);padding:3px 10px;border-radius:12px;color:#fff" id="accountBadge"></div>
+    <div class="sync-status" id="syncStatus">
+      <div class="sync-dot loading" id="syncDot"></div>
+      <span id="syncText">接続中...</span>
+    </div>
   </div>
 </div>
 <div class="legend">
@@ -255,7 +272,7 @@ function renderCal(){
       else if(closed)tags+=`<div class="dt dt-closed">${closed}</div>`;
       if(teiji)tags+=`<div class="dt dt-teiji">${teiji}</div>`;
       if(tsushin)tags+=`<div class="dt dt-tsushin">${tsushin}</div>`;
-      extraEvs.forEach(ev=>tags+=`<div class="dt dt-${ev.type==='teiji'?'teiji':ev.type==='tsushin'?'tsushin':'closed'}">${ev.text}</div>`);
+      extraEvs.forEach(ev=>tags+=`<div class="dt dt-${ev.type==='teiji'?'teiji':ev.type==='tsushin'?'tsushin':ev.type==='sustina'?'sustina':'closed'}">${ev.text}</div>`);
       gridHtml+=`<div class="day-cell ${bgCls}${isSel?' selected':''}" data-y="${y}" data-m="${m}" data-d="${d}">
         <div class="day-num ${numCls}">${d}</div>
         <div class="day-tags">${tags}</div>
@@ -293,8 +310,8 @@ function renderPanel(y,m,d){
   h+=`<div class="section-block"><div class="section-title">行事・閉館情報</div>`;
   if(!events.length)h+=`<div class="empty-msg">行事なし</div>`;
   events.forEach(ev=>{
-    const cls=ev.type==='teiji'?'ev-teiji':ev.type==='tsushin'?'ev-tsushin':ev.type==='hol'?'ev-hol':'ev-closed';
-    const lbl=ev.type==='teiji'?'定':ev.type==='tsushin'?'通':ev.type==='hol'?'祝':'休';
+    const cls=ev.type==='teiji'?'ev-teiji':ev.type==='tsushin'?'ev-tsushin':ev.type==='hol'?'ev-hol':ev.type==='sustina'?'ev-sustina':'ev-closed';
+    const lbl=ev.type==='teiji'?'定':ev.type==='tsushin'?'通':ev.type==='hol'?'祝':ev.type==='sustina'?'サ':'休';
     const canDel=ev.id&&!ev.id.startsWith('base');
     h+=`<div class="event-item ${cls}"><span class="ev-label">${lbl}</span><span style="flex:1">${ev.text}</span>${canDel?`<button class="ev-del" onclick="deleteEvent('${dk}','${ev.id}')">&#x2715;</button>`:''}</div>`;
   });
@@ -303,6 +320,7 @@ function renderPanel(y,m,d){
       <button class="type-btn${_evType==='teiji'?' sel-teiji':''}" onclick="setEvType('teiji')">定時制</button>
       <button class="type-btn${_evType==='tsushin'?' sel-tsushin':''}" onclick="setEvType('tsushin')">通信制</button>
       <button class="type-btn${_evType==='closed'?' sel-closed':''}" onclick="setEvType('closed')">閉館・休日</button>
+      <button class="type-btn${_evType==='sustina'?' sel-sustina':''}" onclick="setEvType('sustina')">サスティナ秋田</button>
     </div></div>
     <div class="form-row"><label>行事名</label><input type="text" id="evText" placeholder="行事名を入力"/></div>
     <div class="form-actions"><button class="btn-cancel-f" onclick="toggleEvForm('${dk}')">キャンセル</button>
@@ -417,13 +435,23 @@ async function hashPassword(pw){
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
 
+let currentAccount = '';
+
 async function doLogin(){
+  const account = document.getElementById('loginAccount').value;
   const val = document.getElementById('loginInput').value;
+  if(!account){
+    document.getElementById('loginError').textContent='アカウントを選択してください';
+    return;
+  }
   const hashed = await hashPassword(val);
   if(hashed === PASSWORD_HASH){
+    currentAccount = account;
     sessionStorage.setItem('meitoku_auth','1');
+    sessionStorage.setItem('meitoku_account', account);
     document.getElementById('loginOverlay').style.display='none';
     document.getElementById('mainApp').style.display='flex';
+    document.getElementById('accountBadge').textContent = account;
     buildJumpNav();
     loadFromSupabase().then(()=>renderCal());
   } else {
@@ -433,14 +461,16 @@ async function doLogin(){
   }
 }
 
-// セッション維持（同じタブならログイン済み）
+// セッション維持
 if(sessionStorage.getItem('meitoku_auth')==='1'){
+  currentAccount = sessionStorage.getItem('meitoku_account')||'';
   document.getElementById('loginOverlay').style.display='none';
   document.getElementById('mainApp').style.display='flex';
+  document.getElementById('accountBadge').textContent = currentAccount;
   buildJumpNav();
   loadFromSupabase().then(()=>renderCal());
 } else {
-  setTimeout(()=>document.getElementById('loginInput').focus(), 100);
+  setTimeout(()=>document.getElementById('loginAccount').focus(), 100);
 }
 </script>
 </body>
