@@ -91,10 +91,30 @@ body{font-family:'Hiragino Kaku Gothic Pro','Yu Gothic',Meiryo,sans-serif;backgr
 .setup-banner{background:#fff3cd;border:1px solid #e6c800;border-radius:8px;padding:12px 16px;margin:10px 0;font-size:12px;color:#7c5c00;line-height:1.6}
 .setup-banner strong{display:block;margin-bottom:4px;font-size:13px}
 .setup-banner code{background:#fff;padding:2px 5px;border-radius:3px;font-family:monospace;font-size:11px;word-break:break-all}
+.login-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:#0d2137;display:flex;align-items:center;justify-content:center;z-index:9999}
+.login-box{background:#fff;border-radius:14px;padding:36px 32px;width:320px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.3)}
+.login-logo{font-size:16px;font-weight:700;color:#1a3a5c;margin-bottom:4px;letter-spacing:.05em}
+.login-sub{font-size:11px;color:#8899aa;margin-bottom:24px}
+.login-label{font-size:11px;font-weight:700;color:#556677;text-align:left;display:block;margin-bottom:4px}
+.login-input{width:100%;padding:10px 12px;border:1.5px solid #c8d8ea;border-radius:8px;font-size:18px;text-align:center;letter-spacing:.3em;font-family:inherit;margin-bottom:8px;outline:none}
+.login-input:focus{border-color:#1a3a5c}
+.login-btn{width:100%;padding:11px;background:#1a3a5c;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px}
+.login-btn:hover{background:#2c5282}
+.login-error{color:#c0392b;font-size:11px;margin-top:6px;min-height:16px}
 </style>
 </head>
 <body>
-<div class="app">
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <div class="login-logo">秋田明徳館高校</div>
+    <div class="login-sub">統合カレンダー　令和8年度</div>
+    <label class="login-label">パスワード</label>
+    <input class="login-input" type="password" id="loginInput" placeholder="●●●●" maxlength="20" onkeydown="if(event.key==='Enter')doLogin()" />
+    <button class="login-btn" onclick="doLogin()">ログイン</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+<div class="app" id="mainApp" style="display:none">
 <div class="topbar">
   <div class="topbar-left">
     <h1>秋田明徳館高校　統合カレンダー　令和8年度</h1>
@@ -358,8 +378,32 @@ document.getElementById('filterBar').querySelectorAll('.pill').forEach(pill=>{
   });
 });
 
-buildJumpNav();
-loadFromGAS().then(()=>renderCal());
+const PASSWORD = '0000';
+
+function doLogin(){
+  const val = document.getElementById('loginInput').value;
+  if(val === PASSWORD){
+    sessionStorage.setItem('meitoku_auth','1');
+    document.getElementById('loginOverlay').style.display='none';
+    document.getElementById('mainApp').style.display='flex';
+    buildJumpNav();
+    loadFromGAS().then(()=>renderCal());
+  } else {
+    document.getElementById('loginError').textContent='パスワードが違います';
+    document.getElementById('loginInput').value='';
+    document.getElementById('loginInput').focus();
+  }
+}
+
+// セッション維持（同じタブならログイン済み）
+if(sessionStorage.getItem('meitoku_auth')==='1'){
+  document.getElementById('loginOverlay').style.display='none';
+  document.getElementById('mainApp').style.display='flex';
+  buildJumpNav();
+  loadFromGAS().then(()=>renderCal());
+} else {
+  setTimeout(()=>document.getElementById('loginInput').focus(), 100);
+}
 </script>
 </body>
 </html>
