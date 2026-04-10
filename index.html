@@ -128,6 +128,29 @@ body{font-family:'Hiragino Kaku Gothic Pro','Yu Gothic',Meiryo,sans-serif;backgr
 .modal-box h2{font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:16px}
 .modal-close{float:right;background:none;border:none;font-size:18px;cursor:pointer;color:#556677;margin-top:-4px}
 .date-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.mini-cal-trigger{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border:1px solid #c8d8ea;border-radius:6px;font-size:12px;cursor:pointer;background:#fff;color:#1a2a3a;font-family:inherit;user-select:none}
+.mini-cal-trigger:hover{border-color:#1a3a5c;background:#f0f6ff}
+.mini-cal-wrap{background:#fff;border:1px solid #c8d8ea;border-radius:8px;padding:8px;margin-top:4px;z-index:100;box-shadow:0 4px 16px rgba(0,0,0,.12)}
+.mini-cal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.mini-cal-header span{font-size:12px;font-weight:700;color:#1a3a5c}
+.mini-cal-nav{background:none;border:none;cursor:pointer;color:#1a3a5c;font-size:14px;padding:0 6px;font-family:inherit}
+.mini-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px}
+.mini-cal-dow{font-size:9px;text-align:center;color:#8899aa;padding:2px 0;font-weight:600}
+.mini-cal-dow.s{color:#c0392b}.mini-cal-dow.sa{color:#2471a3}
+.mini-cal-day{font-size:10px;text-align:center;padding:4px 2px;border-radius:4px;cursor:pointer;color:#1a2a3a}
+.mini-cal-day:hover{background:#e8f0fe}
+.mini-cal-day.selected{background:#1a3a5c;color:#fff;border-radius:4px}
+.mini-cal-day.today{font-weight:700;color:#1a3a5c}
+.mini-cal-day.empty{cursor:default}
+.mini-cal-day.sun{color:#c0392b}.mini-cal-day.sat{color:#2471a3}
+.mini-cal-day.selected.sun,.mini-cal-day.selected.sat{color:#fff}
+.drum-wrap{position:relative;height:120px;overflow:hidden;border:1px solid #c8d8ea;border-radius:8px;background:#fff;cursor:grab}
+.drum-list{list-style:none;padding:0;margin:0;transition:transform .15s ease}
+.drum-item{height:36px;display:flex;align-items:center;justify-content:center;font-size:14px;color:#1a2a3a;user-select:none}
+.drum-item.selected{font-weight:700;font-size:16px;color:#1a3a5c}
+.drum-overlay-top{position:absolute;top:0;left:0;width:100%;height:42px;background:linear-gradient(to bottom,rgba(255,255,255,.9),rgba(255,255,255,0));pointer-events:none;z-index:2}
+.drum-overlay-bot{position:absolute;bottom:0;left:0;width:100%;height:42px;background:linear-gradient(to top,rgba(255,255,255,.9),rgba(255,255,255,0));pointer-events:none;z-index:2}
+.drum-center-line{position:absolute;top:50%;left:4px;right:4px;height:36px;transform:translateY(-50%);border-top:1.5px solid #c8d8ea;border-bottom:1.5px solid #c8d8ea;pointer-events:none;z-index:1;border-radius:4px}
 .add-event-top-btn{display:flex;align-items:center;gap:6px;padding:6px 16px;background:#1a3a5c;color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600}
 .add-event-top-btn:hover{background:#2c5282}
 </style>
@@ -177,6 +200,7 @@ body{font-family:'Hiragino Kaku Gothic Pro','Yu Gothic',Meiryo,sans-serif;backgr
   <span class="pill" data-f="teiji">定時制行事</span>
   <span class="pill" data-f="tsushin">通信制行事</span>
   <span class="pill" data-f="park">駐車場予約あり</span>
+  <span class="pill" data-f="sustina">サスティナ秋田</span>
   <button class="add-event-top-btn" onclick="openEventModal()">＋ 行事を追加</button>
 </div>
 <div class="jump-nav" id="jumpNav"></div>
@@ -187,10 +211,11 @@ body{font-family:'Hiragino Kaku Gothic Pro','Yu Gothic',Meiryo,sans-serif;backgr
 </div>
 
 <div class="modal-overlay" id="eventModal" style="display:none">
-  <div class="modal-box">
+  <div class="modal-box" style="max-width:480px">
     <button class="modal-close" onclick="closeEventModal()">&#x2715;</button>
-    <h2>行事を追加・編集</h2>
-    <div class="form-row" style="margin-bottom:10px"><label>種別</label>
+    <h2 id="modalTitle">行事を追加</h2>
+
+    <div class="form-row" style="margin-bottom:12px"><label>種別</label>
       <div class="type-btns" id="modalTypeBtns">
         <button class="type-btn sel-teiji" data-t="teiji" onclick="setModalEvType('teiji')">定時制</button>
         <button class="type-btn" data-t="tsushin" onclick="setModalEvType('tsushin')">通信制</button>
@@ -198,31 +223,43 @@ body{font-family:'Hiragino Kaku Gothic Pro','Yu Gothic',Meiryo,sans-serif;backgr
         <button class="type-btn" data-t="sustina" onclick="setModalEvType('sustina')">サスティナ秋田</button>
       </div>
     </div>
-    <div class="form-row" style="margin-bottom:10px">
+
+    <div class="form-row" style="margin-bottom:14px">
       <label>行事名</label>
       <input type="text" id="modalEvText" placeholder="行事名を入力" style="width:100%;padding:8px 10px;border:1px solid #c8d8ea;border-radius:6px;font-size:13px;font-family:inherit"/>
     </div>
-    <div class="date-grid">
-      <div class="form-row"><label>開始日</label>
-        <select id="modalStartDate" style="width:100%;padding:7px 8px;border:1px solid #c8d8ea;border-radius:6px;font-size:12px;font-family:inherit"></select>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+      <div>
+        <label style="font-size:10px;font-weight:700;color:#667788;display:block;margin-bottom:4px">開始日</label>
+        <div class="mini-cal-trigger" id="startDateTrigger" onclick="toggleMiniCal('start')">
+          <span id="startDateLabel">日付を選択</span>
+          <span style="font-size:10px;color:#8899aa">▼</span>
+        </div>
+        <div class="mini-cal-wrap" id="startCalWrap" style="display:none"></div>
       </div>
-      <div class="form-row"><label>終了日（複数日の場合）</label>
-        <select id="modalEndDate" style="width:100%;padding:7px 8px;border:1px solid #c8d8ea;border-radius:6px;font-size:12px;font-family:inherit"></select>
+      <div>
+        <label style="font-size:10px;font-weight:700;color:#667788;display:block;margin-bottom:4px">終了日（複数日の場合）</label>
+        <div class="mini-cal-trigger" id="endDateTrigger" onclick="toggleMiniCal('end')">
+          <span id="endDateLabel">開始日と同じ</span>
+          <span style="font-size:10px;color:#8899aa">▼</span>
+        </div>
+        <div class="mini-cal-wrap" id="endCalWrap" style="display:none"></div>
       </div>
     </div>
-    <div class="date-grid">
-      <div class="form-row"><label>開始時間（任意）</label>
-        <select id="modalStartTime" style="width:100%;padding:7px 8px;border:1px solid #c8d8ea;border-radius:6px;font-size:12px;font-family:inherit">
-          <option value="">未設定</option>
-        </select>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div>
+        <label style="font-size:10px;font-weight:700;color:#667788;display:block;margin-bottom:4px">開始時間（任意）</label>
+        <div class="drum-wrap" id="startDrum"></div>
       </div>
-      <div class="form-row"><label>終了時間（任意）</label>
-        <select id="modalEndTime" style="width:100%;padding:7px 8px;border:1px solid #c8d8ea;border-radius:6px;font-size:12px;font-family:inherit">
-          <option value="">未設定</option>
-        </select>
+      <div>
+        <label style="font-size:10px;font-weight:700;color:#667788;display:block;margin-bottom:4px">終了時間（任意）</label>
+        <div class="drum-wrap" id="endDrum"></div>
       </div>
     </div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+
+    <div style="display:flex;gap:8px;justify-content:flex-end">
       <button class="btn-cancel-f" onclick="closeEventModal()">キャンセル</button>
       <button class="btn-save" id="modalSaveBtn" onclick="saveEventFromModal()">追加</button>
     </div>
@@ -365,6 +402,7 @@ function renderCal(){
       if(activeFilter==='teiji'&&!teiji&&!extraEvs.some(e=>e.type==='teiji'))show=false;
       if(activeFilter==='tsushin'&&!tsushin&&!extraEvs.some(e=>e.type==='tsushin'))show=false;
       if(activeFilter==='park'&&!hasPark)show=false;
+      if(activeFilter==='sustina'&&!extraEvs.some(e=>e.type==='sustina'))show=false;
       if(!show){gridHtml+=`<div class="day-cell empty" style="opacity:.18"><div class="day-num c-norm" style="font-size:10px">${d}</div></div>`;continue;}
       if(teiji||tsushin||hol||closed||extraEvs.length>0)eventDays++;
       const bgCls=hol||isSun?'bg-hol':isSat?'bg-sat':vac?'bg-vac':closed?'bg-closed':'';
@@ -675,38 +713,179 @@ MONTHS.forEach(([y,m])=>{
   for(let d=1;d<=days;d++) ALL_DATES.push({y,m,d,key:dateKey(y,m,d),label:`${y}年${m}月${d}日`});
 });
 
-function populateDateSelects(startKey='',endKey=''){
-  const ss=document.getElementById('modalStartDate');
-  const es=document.getElementById('modalEndDate');
-  ss.innerHTML=ALL_DATES.map(dt=>`<option value="${dt.key}"${dt.key===startKey?' selected':''}>${dt.label}</option>`).join('');
-  es.innerHTML='<option value="">開始日と同じ</option>'+ALL_DATES.map(dt=>`<option value="${dt.key}"${dt.key===endKey?' selected':''}>${dt.label}</option>`).join('');
-}
-
-function populateTimeSelects(startT='',endT=''){
-  const ts=document.getElementById('modalStartTime');
-  const te=document.getElementById('modalEndTime');
-  const opts='<option value="">未設定</option>'+TIMES.map(t=>`<option value="${t}">${t}</option>`).join('');
-  ts.innerHTML=opts; te.innerHTML=opts;
-  if(startT)ts.value=startT;
-  if(endT)te.value=endT;
-}
-
 let _modalEvType='teiji';
 let _modalEditId=null;
 let _modalEditDk=null;
+let _modalStartKey='';
+let _modalEndKey='';
+let _activeCal=null; // 'start' or 'end'
+let _miniCalMonth={start:{y:2026,m:4},end:{y:2026,m:4}};
+
+// --- ドラムロール ---
+const DRUM_TIMES=['未設定',...TIMES];
+let _drumStart=0, _drumEnd=0; // index into DRUM_TIMES
+
+function buildDrum(wrapperId, selectedIdx, onChange){
+  const wrap=document.getElementById(wrapperId);
+  wrap.innerHTML=`
+    <div class="drum-overlay-top"></div>
+    <div class="drum-center-line"></div>
+    <div class="drum-overlay-bot"></div>
+    <ul class="drum-list" id="${wrapperId}-list"></ul>`;
+  const list=wrap.querySelector('.drum-list');
+  DRUM_TIMES.forEach((t,i)=>{
+    const li=document.createElement('li');
+    li.className='drum-item'+(i===selectedIdx?' selected':'');
+    li.textContent=t;
+    list.appendChild(li);
+  });
+  scrollDrumTo(wrapperId,selectedIdx,false);
+  // touch/mouse scroll
+  let startY=0,startIdx=selectedIdx,isDragging=false;
+  const onDown=e=>{isDragging=true;startY=e.touches?e.touches[0].clientY:e.clientY;startIdx=selectedIdx;e.preventDefault();};
+  const onMove=e=>{
+    if(!isDragging)return;
+    const y=e.touches?e.touches[0].clientY:e.clientY;
+    const delta=Math.round((startY-y)/36);
+    let ni=Math.max(0,Math.min(DRUM_TIMES.length-1,startIdx+delta));
+    if(ni!==selectedIdx){selectedIdx=ni;onChange(ni);scrollDrumTo(wrapperId,ni,true);updateDrumHighlight(wrapperId,ni);}
+    e.preventDefault();
+  };
+  const onUp=()=>{isDragging=false;};
+  wrap.addEventListener('mousedown',onDown);
+  wrap.addEventListener('mousemove',onMove);
+  wrap.addEventListener('mouseup',onUp);
+  wrap.addEventListener('touchstart',onDown,{passive:false});
+  wrap.addEventListener('touchmove',onMove,{passive:false});
+  wrap.addEventListener('touchend',onUp);
+  wrap.addEventListener('wheel',e=>{
+    e.preventDefault();
+    const delta=e.deltaY>0?1:-1;
+    selectedIdx=Math.max(0,Math.min(DRUM_TIMES.length-1,selectedIdx+delta));
+    onChange(selectedIdx);scrollDrumTo(wrapperId,selectedIdx,true);updateDrumHighlight(wrapperId,selectedIdx);
+  },{passive:false});
+}
+
+function scrollDrumTo(wrapperId,idx,smooth){
+  const list=document.getElementById(wrapperId+'-list');
+  if(!list)return;
+  const offset=42-(idx*36);
+  list.style.transition=smooth?'transform .15s ease':'none';
+  list.style.transform=`translateY(${offset}px)`;
+}
+
+function updateDrumHighlight(wrapperId,idx){
+  const list=document.getElementById(wrapperId+'-list');
+  if(!list)return;
+  list.querySelectorAll('.drum-item').forEach((li,i)=>{
+    li.className='drum-item'+(i===idx?' selected':'');
+  });
+}
+
+// --- ミニカレンダー ---
+function renderMiniCal(type){
+  const {y,m}=_miniCalMonth[type];
+  const selectedKey=type==='start'?_modalStartKey:_modalEndKey;
+  const days=daysInMonth(y,m),fd=firstDow(y,m);
+  const DOW_S=['日','月','火','水','木','金','土'];
+  let html=`<div class="mini-cal-header">
+    <button class="mini-cal-nav" onclick="miniCalPrev('${type}')">&#9664;</button>
+    <span>${y}年${m}月</span>
+    <button class="mini-cal-nav" onclick="miniCalNext('${type}')">&#9654;</button>
+  </div>
+  <div class="mini-cal-grid">
+    ${DOW_S.map((d,i)=>`<div class="mini-cal-dow ${i===0?'s':i===6?'sa':''}">${d}</div>`).join('')}`;
+  for(let i=0;i<fd;i++)html+=`<div class="mini-cal-day empty"></div>`;
+  for(let d=1;d<=days;d++){
+    const key=dateKey(y,m,d);
+    const dow=new Date(y,m-1,d).getDay();
+    const cls=(key===selectedKey)?'selected':(dow===0?'sun':dow===6?'sat':'');
+    html+=`<div class="mini-cal-day ${cls}" onclick="selectMiniCalDay('${type}','${key}',${y},${m},${d})">${d}</div>`;
+  }
+  html+=`</div>`;
+  const wrap=document.getElementById(type==='start'?'startCalWrap':'endCalWrap');
+  wrap.innerHTML=html;
+}
+
+function toggleMiniCal(type){
+  const wrap=document.getElementById(type==='start'?'startCalWrap':'endCalWrap');
+  const other=document.getElementById(type==='start'?'endCalWrap':'startCalWrap');
+  if(wrap.style.display==='none'){
+    other.style.display='none';
+    _activeCal=type;
+    const selKey=type==='start'?_modalStartKey:_modalEndKey;
+    if(selKey){const p=ALL_DATES.find(d=>d.key===selKey);if(p)_miniCalMonth[type]={y:p.y,m:p.m};}
+    renderMiniCal(type);
+    wrap.style.display='block';
+  }else{wrap.style.display='none';_activeCal=null;}
+}
+
+function miniCalPrev(type){
+  let {y,m}=_miniCalMonth[type];
+  m--;if(m<1){m=12;y--;}
+  _miniCalMonth[type]={y,m};renderMiniCal(type);
+}
+function miniCalNext(type){
+  let {y,m}=_miniCalMonth[type];
+  m++;if(m>12){m=1;y++;}
+  _miniCalMonth[type]={y,m};renderMiniCal(type);
+}
+
+function selectMiniCalDay(type,key,y,m,d){
+  if(type==='start'){
+    _modalStartKey=key;
+    _miniCalMonth.start={y,m};
+    document.getElementById('startDateLabel').textContent=`${y}年${m}月${d}日`;
+    document.getElementById('startCalWrap').style.display='none';
+    // Auto-set end date same as start if not set
+    if(!_modalEndKey){
+      document.getElementById('endDateLabel').textContent='開始日と同じ';
+    }
+  }else{
+    _modalEndKey=key;
+    _miniCalMonth.end={y,m};
+    document.getElementById('endDateLabel').textContent=key===_modalStartKey?'開始日と同じ':`${y}年${m}月${d}日`;
+    document.getElementById('endCalWrap').style.display='none';
+  }
+}
+
+function getDatesInRange(startKey,endKey){
+  if(!endKey||endKey===startKey||endKey==='')return[startKey];
+  const sidx=ALL_DATES.findIndex(d=>d.key===startKey);
+  const eidx=ALL_DATES.findIndex(d=>d.key===endKey);
+  if(sidx<0||eidx<0||eidx<sidx)return[startKey];
+  return ALL_DATES.slice(sidx,eidx+1).map(d=>d.key);
+}
 
 function openEventModal(prefillDate=null,editId=null,editDk=null){
   _modalEditId=editId; _modalEditDk=editDk;
-  let startKey=prefillDate||ALL_DATES[0].key;
-  let endKey='', startT='', endT='', text='', type='teiji';
+  _modalStartKey=prefillDate||ALL_DATES[0].key;
+  _modalEndKey='';
+  let startT='',endT='',text='',type='teiji';
   if(editId&&editDk){
     const ev=DB.events[editDk]&&DB.events[editDk].find(e=>e.id===editId);
-    if(ev){text=ev.text;type=ev.type;startT=ev.start_time||'';endT=ev.end_time||'';startKey=editDk;endKey=ev.end_date||'';}
+    if(ev){text=ev.text;type=ev.type;startT=ev.start_time||'';endT=ev.end_time||'';_modalStartKey=editDk;_modalEndKey=ev.end_date||'';}
   }
   _modalEvType=type;
-  populateDateSelects(startKey,endKey);
-  populateTimeSelects(startT,endT);
+  // Set start date label
+  const sd=ALL_DATES.find(d=>d.key===_modalStartKey);
+  document.getElementById('startDateLabel').textContent=sd?`${sd.y}年${sd.m}月${sd.d}日`:'日付を選択';
+  // Set end date label
+  if(_modalEndKey&&_modalEndKey!==_modalStartKey){
+    const ed=ALL_DATES.find(d=>d.key===_modalEndKey);
+    document.getElementById('endDateLabel').textContent=ed?`${ed.y}年${ed.m}月${ed.d}日`:'開始日と同じ';
+  }else{document.getElementById('endDateLabel').textContent='開始日と同じ';}
+  // Hide cals
+  document.getElementById('startCalWrap').style.display='none';
+  document.getElementById('endCalWrap').style.display='none';
+  if(sd)_miniCalMonth.start={y:sd.y,m:sd.m};
+  // Init drums
+  _drumStart=startT?DRUM_TIMES.indexOf(startT):0; if(_drumStart<0)_drumStart=0;
+  _drumEnd=endT?DRUM_TIMES.indexOf(endT):0; if(_drumEnd<0)_drumEnd=0;
+  buildDrum('startDrum',_drumStart,i=>{_drumStart=i;});
+  buildDrum('endDrum',_drumEnd,i=>{_drumEnd=i;});
   document.getElementById('modalEvText').value=text;
+  document.getElementById('modalTitle').textContent=editId?'行事を編集':'行事を追加';
   document.getElementById('modalSaveBtn').textContent=editId?'更新':'追加';
   document.querySelectorAll('#modalTypeBtns .type-btn').forEach(b=>{
     b.className='type-btn'+(b.dataset.t===type?' sel-'+type:'');
@@ -717,7 +896,9 @@ function openEventModal(prefillDate=null,editId=null,editDk=null){
 
 function closeEventModal(){
   document.getElementById('eventModal').style.display='none';
-  _modalEditId=null; _modalEditDk=null;
+  _modalEditId=null;_modalEditDk=null;
+  document.getElementById('startCalWrap').style.display='none';
+  document.getElementById('endCalWrap').style.display='none';
 }
 
 function setModalEvType(t){
@@ -727,48 +908,38 @@ function setModalEvType(t){
   });
 }
 
-function getDatesInRange(startKey,endKey){
-  if(!endKey||endKey===startKey)return[startKey];
-  const sidx=ALL_DATES.findIndex(d=>d.key===startKey);
-  const eidx=ALL_DATES.findIndex(d=>d.key===endKey);
-  if(sidx<0||eidx<0||eidx<sidx)return[startKey];
-  return ALL_DATES.slice(sidx,eidx+1).map(d=>d.key);
-}
-
 async function saveEventFromModal(){
   const text=document.getElementById('modalEvText').value.trim();
   if(!text){document.getElementById('modalEvText').focus();return;}
-  const startKey=document.getElementById('modalStartDate').value;
-  const endKey=document.getElementById('modalEndDate').value;
-  const startT=document.getElementById('modalStartTime').value;
-  const endT=document.getElementById('modalEndTime').value;
-  const dates=getDatesInRange(startKey,endKey||startKey);
+  if(!_modalStartKey){alert('開始日を選択してください');return;}
+  const endKey=(_modalEndKey&&_modalEndKey!==_modalStartKey)?_modalEndKey:'';
+  const startT=DRUM_TIMES[_drumStart]==='未設定'?'':DRUM_TIMES[_drumStart];
+  const endT=DRUM_TIMES[_drumEnd]==='未設定'?'':DRUM_TIMES[_drumEnd];
+  const dates=getDatesInRange(_modalStartKey,endKey||_modalStartKey);
   const btn=document.getElementById('modalSaveBtn');
   btn.disabled=true;btn.textContent='保存中...';
   setSyncStatus('loading','保存中...');
   try{
     if(_modalEditId&&_modalEditDk){
-      // Update existing
-      await sbUpdate('events',_modalEditId,{type:_modalEvType,text,start_time:startT,end_time:endT,end_date:endKey||''});
+      await sbUpdate('events',_modalEditId,{type:_modalEvType,text,start_time:startT,end_time:endT,end_date:endKey});
       if(DB.events[_modalEditDk]){
         const idx=DB.events[_modalEditDk].findIndex(e=>e.id===_modalEditId);
-        if(idx>=0)DB.events[_modalEditDk][idx]={...DB.events[_modalEditDk][idx],type:_modalEvType,text,start_time:startT,end_time:endT,end_date:endKey||''};
+        if(idx>=0)DB.events[_modalEditDk][idx]={...DB.events[_modalEditDk][idx],type:_modalEvType,text,start_time:startT,end_time:endT,end_date:endKey};
       }
     }else{
-      // Insert for each date in range
       const groupId='grp-'+Date.now();
       for(const dk of dates){
-        const newId='ev-'+Date.now()+'-'+dk;
-        await sbInsert('events',{id:newId,date_key:dk,type:_modalEvType,text,account:currentAccount,start_time:startT,end_time:endT,end_date:endKey||'',group_id:groupId});
+        const newId='ev-'+Date.now()+Math.random().toString(36).slice(2,6);
+        await sbInsert('events',{id:newId,date_key:dk,type:_modalEvType,text,account:currentAccount,start_time:startT,end_time:endT,end_date:endKey,group_id:groupId});
         if(!DB.events[dk])DB.events[dk]=[];
-        DB.events[dk].push({id:newId,type:_modalEvType,text,account:currentAccount,start_time:startT,end_time:endT,end_date:endKey||'',group_id:groupId});
+        DB.events[dk].push({id:newId,type:_modalEvType,text,account:currentAccount,start_time:startT,end_time:endT,end_date:endKey,group_id:groupId});
       }
     }
     setSyncStatus('ok','同期済み');
     closeEventModal();
     renderCal();
     if(selectedDate)renderPanel(...selectedDate);
-  }catch(e){setSyncStatus('error','保存失敗');}
+  }catch(e){setSyncStatus('error','保存失敗');console.error(e);}
   btn.disabled=false;btn.textContent=_modalEditId?'更新':'追加';
 }
 
