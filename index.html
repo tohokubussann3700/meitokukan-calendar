@@ -106,6 +106,23 @@ body{font-family:'Hiragino Kaku Gothic Pro','Yu Gothic',Meiryo,sans-serif;backgr
 .login-btn{width:100%;padding:11px;background:#1a3a5c;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px}
 .login-btn:hover{background:#2c5282}
 .login-error{color:#c0392b;font-size:11px;margin-top:6px;min-height:16px}
+.logout-btn{background:rgba(255,255,255,.15);border:none;color:#fff;font-size:11px;padding:4px 10px;border-radius:10px;cursor:pointer;font-family:inherit}
+.logout-btn:hover{background:rgba(255,255,255,.3)}
+.admin-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:8000;display:flex;align-items:center;justify-content:center}
+.admin-box{background:#fff;border-radius:14px;padding:24px;width:92%;max-width:480px;max-height:85vh;overflow-y:auto}
+.admin-box h2{font-size:15px;font-weight:700;color:#1a3a5c;margin-bottom:16px}
+.admin-section{margin-bottom:20px;border-bottom:1px solid #eef2f7;padding-bottom:16px}
+.admin-section h3{font-size:12px;font-weight:700;color:#556677;margin-bottom:10px;letter-spacing:.04em}
+.account-row{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:#f5f8fc;border-radius:6px;margin-bottom:6px;font-size:12px}
+.account-row-name{font-weight:600;color:#1a2a3a}
+.account-row-actions{display:flex;gap:6px}
+.btn-rename{font-size:10px;color:#2471a3;background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;font-family:inherit}
+.btn-remove{font-size:10px;color:#c0392b;background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;font-family:inherit}
+.admin-input-row{display:flex;gap:6px;margin-top:8px}
+.admin-input-row input{flex:1;padding:7px 10px;border:1px solid #c8d8ea;border-radius:6px;font-size:12px;font-family:inherit}
+.admin-input-row button{padding:7px 14px;background:#1a3a5c;color:#fff;border:none;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap}
+.admin-close{float:right;background:none;border:none;font-size:18px;cursor:pointer;color:#556677;margin-top:-4px}
+.owner-tag{font-size:9px;background:#1a3a5c;color:#fff;padding:1px 5px;border-radius:3px;margin-left:4px}
 </style>
 </head>
 <body>
@@ -116,11 +133,6 @@ body{font-family:'Hiragino Kaku Gothic Pro','Yu Gothic',Meiryo,sans-serif;backgr
     <label class="login-label">アカウント</label>
     <select class="login-select" id="loginAccount">
       <option value="">-- 選択してください --</option>
-      <option value="団体A">団体A</option>
-      <option value="団体B">団体B</option>
-      <option value="団体C">団体C</option>
-      <option value="団体D">団体D</option>
-      <option value="団体E">団体E</option>
     </select>
     <label class="login-label" style="margin-top:12px">パスワード</label>
     <input class="login-input" type="password" id="loginInput" placeholder="●●●●" maxlength="20" onkeydown="if(event.key==='Enter')doLogin()" />
@@ -136,6 +148,8 @@ body{font-family:'Hiragino Kaku Gothic Pro','Yu Gothic',Meiryo,sans-serif;backgr
   </div>
   <div style="display:flex;align-items:center;gap:8px">
     <div style="font-size:11px;background:rgba(255,255,255,.15);padding:3px 10px;border-radius:12px;color:#fff" id="accountBadge"></div>
+    <button class="logout-btn" onclick="openAdmin()">管理</button>
+    <button class="logout-btn" onclick="doLogout()">ログアウト</button>
     <div class="sync-status" id="syncStatus">
       <div class="sync-dot loading" id="syncDot"></div>
       <span id="syncText">接続中...</span>
@@ -163,6 +177,38 @@ body{font-family:'Hiragino Kaku Gothic Pro','Yu Gothic',Meiryo,sans-serif;backgr
   <div class="park-panel" id="parkPanel"></div>
 </div>
 </div>
+
+<div class="admin-overlay" id="adminOverlay" style="display:none">
+  <div class="admin-box">
+    <button class="admin-close" onclick="closeAdmin()">&#x2715;</button>
+    <h2>管理パネル</h2>
+
+    <div class="admin-section">
+      <h3>アカウント管理（団体の追加・変更・削除）</h3>
+      <div id="accountList"></div>
+      <div class="admin-input-row">
+        <input type="text" id="newAccountName" placeholder="新しい団体名を入力" maxlength="20" />
+        <button onclick="addAccount()">追加</button>
+      </div>
+    </div>
+
+    <div class="admin-section">
+      <h3>駐車場管理（駐車場の追加・変更・削除）</h3>
+      <div id="lotList"></div>
+      <div class="admin-input-row">
+        <input type="text" id="newLotName" placeholder="新しい駐車場名を入力" maxlength="20" />
+        <button onclick="addLot()">追加</button>
+      </div>
+    </div>
+
+    <div class="admin-section" style="border-bottom:none">
+      <h3>データ管理</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button onclick="exportData()" style="padding:7px 14px;background:#1a3a5c;color:#fff;border:none;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit">データをエクスポート（JSON）</button>
+      </div>
+    </div>
+  </div>
+</div>
 <script>
 // ============================================================
 // Supabase 設定
@@ -171,7 +217,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const SB_HEADERS = {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY};
 // ============================================================
 
-const LOTS=['駐車場2','駐車場3','駐車場4','駐車場9'];
+const LOTS_CONST=['駐車場2','駐車場3','駐車場4','駐車場9']; function getLOTS(){return typeof LOTS_LIST!=='undefined'?LOTS_LIST:LOTS_CONST;}
 const CLOSED={'4-11':'D1','4-12':'S1（離任式）','4-18':'D2','4-19':'S2','4-25':'PTA総会','5-9':'D3','5-10':'S3','5-23':'D4','5-24':'S4','6-6':'D5','6-7':'S5','6-20':'D6','6-21':'S6','7-4':'D7','7-5':'S7','7-17':'D8','7-19':'S8','8-10':'学校閉庁日','8-12':'学校閉庁日','8-13':'学校閉庁日','8-14':'学校閉庁日','9-1':'前期T','9-2':'前期T','9-22':'D9','9-23':'S9','10-3':'D10','10-4':'S10','10-17':'D11','10-18':'S11','10-23':'明徳祭','10-24':'明徳祭（一般）','10-26':'振替休業','10-31':'D12','11-1':'S12','11-14':'D13','11-15':'S13','11-28':'D14','11-29':'S14','12-5':'D15','12-13':'S15','12-28':'仕事納め','12-29':'常駐警備なし','12-30':'常駐警備なし','12-31':'常駐警備なし','1-1':'元日','1-2':'常駐警備なし','1-3':'常駐警備なし','1-9':'後期T（4年・3修3年）','1-10':'S16','1-11':'成人の日','2-11':'建国記念の日','2-23':'天皇誕生日','3-20':'春分の日'};
 const HOLIDAYS={'4-29':'昭和の日','5-3':'憲法記念日','5-4':'みどりの日','5-5':'こどもの日','7-20':'海の日','8-11':'山の日','9-21':'敬老の日','9-22':'国民の休日','9-23':'秋分の日','10-12':'スポーツの日','11-3':'文化の日','11-23':'勤労感謝の日','1-1':'元日','1-11':'成人の日','2-11':'建国記念の日','2-23':'天皇誕生日','3-20':'春分の日'};
 const BASE_TEIJI={'4-6':'新任式・始業式・年次集会','4-7':'大清掃','4-8':'身体測定（在校生）','4-9':'交通安全教室・生徒会入会式','4-13':'PTA役員会（旧）・新入生基礎学力テスト','4-14':'結核検診','4-15':'生徒会委員選出・内科健診','4-17':'歯科健診','4-21':'尿検査①','4-22':'定例職員会議・4月職員会議','4-23':'心電図検査','4-25':'PTA総会・PTA講演会','4-28':'担任連絡会④','5-7':'登下校指導①（〜13日）','5-13':'進路ガイダンス（3・4年次）','5-14':'PTA役員会（新年度）','5-20':'生徒総会・5月職員会議','5-22':'定例職員会議','5-26':'防災避難訓練','5-27':'英検IBA・耳鼻科健診','6-1':'薬物乱用防止教室','6-6':'成績入力締切','6-15':'定例職員会議','6-17':'成績会議','6-22':'前期中間考査（〜26日）','6-24':'定例職員会議','7-6':'成績入力締切','7-7':'前期期末考査（〜11日）','7-15':'定例職員会議','7-17':'成績会議','7-21':'防犯教室','9-19':'授業再開・8月職員会議','9-24':'卒業認定会議','9-25':'定例職員会議','9-30':'前期終業式・賞状伝達式','10-1':'後期始業式','10-2':'10月入学式','10-7':'秋田県定通生活体験発表会','10-14':'体験入学','10-21':'10月職員会議','10-23':'明徳祭','10-24':'明徳祭（一般公開）','10-26':'振替休業','11-4':'後期生徒会総会','11-10':'芸術鑑賞教室','11-11':'進路ガイダンス','11-13':'通知表発送','11-24':'後期中間考査（〜30日）','11-25':'定例職員会議','12-7':'冬の読書週間（〜18日）','12-16':'12月職員会議','12-17':'成績会議','12-23':'通知表発送','12-28':'仕事納め','1-6':'担任連絡会⑳','1-8':'高教研定通部会','1-13':'集団コミュニケーション活動','1-14':'授業再開','1-19':'1月職員会議','1-27':'定例職員会議','2-4':'後期期末考査（〜10日）','2-17':'2月職員会議','2-22':'卒業認定会議','2-25':'卒業式予行・表彰式','3-3':'卒業式（ミルハス 14:00）','3-18':'後期終業式','3-25':'離任式・3月職員会議'};
@@ -213,22 +259,28 @@ async function sbDelete(table,id){
   return r.ok;
 }
 
+let ACCOUNTS = ['団体A','団体B','団体C','団体D','団体E'];
+let LOTS_LIST = ['駐車場2','駐車場3','駐車場4','駐車場9'];
+
 async function loadFromSupabase(){
   setSyncStatus('loading','データ読み込み中...');
   try{
-    const [bRows,eRows]=await Promise.all([sbGet('bookings'),sbGet('events')]);
+    const [bRows,eRows,aRows]=await Promise.all([
+      sbGet('bookings'),sbGet('events'),sbGet('accounts','select=id,name&order=created_at.asc')
+    ]);
     const bookings={};
     bRows.forEach(r=>{
       if(!bookings[r.date_key])bookings[r.date_key]={};
       if(!bookings[r.date_key][r.lot])bookings[r.date_key][r.lot]=[];
-      bookings[r.date_key][r.lot].push({id:r.id,start:r.start_time,end:r.end_time,car:r.car});
+      bookings[r.date_key][r.lot].push({id:r.id,start:r.start_time,end:r.end_time,car:r.car,account:r.account||''});
     });
     const events={};
     eRows.forEach(r=>{
       if(!events[r.date_key])events[r.date_key]=[];
-      events[r.date_key].push({id:r.id,type:r.type,text:r.text});
+      events[r.date_key].push({id:r.id,type:r.type,text:r.text,account:r.account||''});
     });
     DB={bookings,events};
+    if(aRows&&aRows.length>0) ACCOUNTS=aRows.map(r=>r.name);
     setSyncStatus('ok','同期済み');
     localStorage.setItem('meitoku_r8_backup',JSON.stringify(DB));
   }catch(e){
@@ -240,8 +292,8 @@ async function loadFromSupabase(){
 
 function getBaseEvents(m,d){const mk=`${m}-${d}`,ev=[];if(HOLIDAYS[mk])ev.push({type:'hol',text:HOLIDAYS[mk],id:'base-h-'+mk});else if(CLOSED[mk])ev.push({type:'closed',text:CLOSED[mk],id:'base-c-'+mk});if(BASE_TEIJI[mk])ev.push({type:'teiji',text:BASE_TEIJI[mk],id:'base-t-'+mk});if(BASE_TSUSHIN[mk])ev.push({type:'tsushin',text:BASE_TSUSHIN[mk],id:'base-s-'+mk});return ev;}
 function getAllEvents(y,m,d){return[...getBaseEvents(m,d),...(DB.events[dateKey(y,m,d)]||[])];}
-function getParkStatus(y,m,d){const bk=DB.bookings[dateKey(y,m,d)]||{};const n=LOTS.filter(l=>(bk[l]||[]).length>0).length;if(n===0)return null;return n<LOTS.length?'partial':'busy';}
-function hasParkBooking(y,m,d){const bk=DB.bookings[dateKey(y,m,d)]||{};return LOTS.some(l=>(bk[l]||[]).length>0);}
+function getParkStatus(y,m,d){const bk=DB.bookings[dateKey(y,m,d)]||{};const n=getLOTS().filter(l=>(bk[l]||[]).length>0).length;if(n===0)return null;return n<getLOTS().length?'partial':'busy';}
+function hasParkBooking(y,m,d){const bk=DB.bookings[dateKey(y,m,d)]||{};return getLOTS().some(l=>(bk[l]||[]).length>0);}
 
 function renderCal(){
   const cp=document.getElementById('calPanel');
@@ -312,8 +364,9 @@ function renderPanel(y,m,d){
   events.forEach(ev=>{
     const cls=ev.type==='teiji'?'ev-teiji':ev.type==='tsushin'?'ev-tsushin':ev.type==='hol'?'ev-hol':ev.type==='sustina'?'ev-sustina':'ev-closed';
     const lbl=ev.type==='teiji'?'定':ev.type==='tsushin'?'通':ev.type==='hol'?'祝':ev.type==='sustina'?'サ':'休';
-    const canDel=ev.id&&!ev.id.startsWith('base');
-    h+=`<div class="event-item ${cls}"><span class="ev-label">${lbl}</span><span style="flex:1">${ev.text}</span>${canDel?`<button class="ev-del" onclick="deleteEvent('${dk}','${ev.id}')">&#x2715;</button>`:''}</div>`;
+    const canDel=ev.id&&!ev.id.startsWith('base')&&(!ev.account||ev.account===currentAccount);
+    const evOwner=ev.account&&!ev.id.startsWith('base')?`<span style="font-size:9px;opacity:.6;margin-left:4px">${ev.account}</span>`:'';
+    h+=`<div class="event-item ${cls}"><span class="ev-label">${lbl}</span><span style="flex:1">${ev.text}${evOwner}</span>${canDel?`<button class="ev-del" onclick="deleteEvent('${dk}','${ev.id}')">&#x2715;</button>`:''}</div>`;
   });
   if(showAddEventForm[dk]){
     h+=`<div class="form-box"><div class="form-row"><label>種別</label><div class="type-btns">
@@ -327,16 +380,18 @@ function renderPanel(y,m,d){
     <button class="btn-save" id="evSaveBtn" onclick="saveEvent('${dk}')">追加</button></div></div>`;
   }else{h+=`<button class="add-btn" onclick="toggleEvForm('${dk}')">+ 行事を追加</button>`;}
   h+=`</div><div class="section-block"><div class="section-title">駐車場予約（4台）</div>`;
-  LOTS.forEach(lot=>{
+  getLOTS().forEach(lot=>{
     const slots=bk[lot]||[],fk=`${dk}-${lot}`,isFree=slots.length===0;
     const isEditThis=editingBooking&&editingBooking.dk===dk&&editingBooking.lot===lot;
     h+=`<div class="lot-card"><div class="lot-header"><span class="lot-name">${lot}</span>
       <span class="lot-badge ${isFree?'badge-free':'badge-busy'}">${isFree?'空き':'予約中'}</span></div>
       <div class="booking-list">`;
     slots.forEach((s,i)=>{
-      h+=`<div class="booking-item"><div><div class="bcar">${s.car||'—'}</div><div class="btime">${s.start} 〜 ${s.end}</div></div>
-        <div style="display:flex;gap:4px"><button class="btn-edit" onclick="startEdit('${dk}','${lot}',${i})">変更</button>
-        <button class="btn-del" onclick="deleteBooking('${dk}','${lot}','${s.id||i}')">&#x2715;</button></div></div>`;
+      const canEdit=!s.account||s.account===currentAccount;
+      const ownerTag=s.account?`<span style="font-size:9px;color:#8899aa;margin-left:4px">${s.account}</span>`:'';
+      h+=`<div class="booking-item"><div><div class="bcar">${s.car||'—'}${ownerTag}</div><div class="btime">${s.start} 〜 ${s.end}</div></div>
+        <div style="display:flex;gap:4px">${canEdit?`<button class="btn-edit" onclick="startEdit('${dk}','${lot}',${i})">変更</button>
+        <button class="btn-del" onclick="deleteBooking('${dk}','${lot}','${s.id||i}')">&#x2715;</button>`:''}</div></div>`;
     });
     if(showBookingForm[fk]||isEditThis){
       const eb=isEditThis?editingBooking.data:null;
@@ -364,10 +419,10 @@ async function saveEvent(dk){
   if(btn){btn.disabled=true;btn.textContent='保存中...';}
   setSyncStatus('loading','保存中...');
   try{
-    const rows=await sbInsert('events',{id:'ev-'+Date.now(),date_key:dk,type:_evType,text});
+    const rows=await sbInsert('events',{id:'ev-'+Date.now(),date_key:dk,type:_evType,text,account:currentAccount});
     const id=rows[0].id;
     if(!DB.events[dk])DB.events[dk]=[];
-    DB.events[dk].push({type:_evType,text,id});
+    DB.events[dk].push({type:_evType,text,id,account:currentAccount});
     setSyncStatus('ok','同期済み');
   }catch(e){setSyncStatus('error','保存失敗');}
   showAddEventForm[dk]=false;
@@ -396,9 +451,9 @@ async function saveBooking(dk,lot,sid){
       if(idx>=0)DB.bookings[dk][lot][idx]={start,end,car,id:sid};
     }else{
       const newId='b-'+Date.now();
-      await sbInsert('bookings',{id:newId,date_key:dk,lot,start_time:start,end_time:end,car});
+      await sbInsert('bookings',{id:newId,date_key:dk,lot,start_time:start,end_time:end,car,account:currentAccount});
       if(!DB.bookings[dk])DB.bookings[dk]={};if(!DB.bookings[dk][lot])DB.bookings[dk][lot]=[];
-      DB.bookings[dk][lot].push({start,end,car,id:newId});
+      DB.bookings[dk][lot].push({start,end,car,id:newId,account:currentAccount});
     }
     setSyncStatus('ok','同期済み');
   }catch(e){setSyncStatus('error','保存失敗');}
@@ -418,6 +473,119 @@ function startEdit(dk,lot,idx){
   editingBooking={dk,lot,idx,sid:s.id,data:s};
   showBookingForm[`${dk}-${lot}`]=true;
   if(selectedDate)renderPanel(...selectedDate);
+}
+
+// ===== ログアウト =====
+function doLogout(){
+  sessionStorage.removeItem('meitoku_auth');
+  sessionStorage.removeItem('meitoku_account');
+  currentAccount='';
+  document.getElementById('mainApp').style.display='none';
+  document.getElementById('loginOverlay').style.display='flex';
+  document.getElementById('loginInput').value='';
+  document.getElementById('loginAccount').value='';
+  document.getElementById('loginError').textContent='';
+}
+
+// ===== 管理パネル =====
+function openAdmin(){
+  renderAccountList();
+  renderLotList();
+  document.getElementById('adminOverlay').style.display='flex';
+}
+function closeAdmin(){document.getElementById('adminOverlay').style.display='none';}
+
+function renderAccountList(){
+  const el=document.getElementById('accountList');
+  el.innerHTML=ACCOUNTS.map((a,i)=>`
+    <div class="account-row">
+      <span class="account-row-name">${a}</span>
+      <div class="account-row-actions">
+        <button class="btn-rename" onclick="renameAccount(${i})">変更</button>
+        <button class="btn-remove" onclick="removeAccount(${i})">削除</button>
+      </div>
+    </div>`).join('');
+  // Also update login select
+  const sel=document.getElementById('loginAccount');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">-- 選択してください --</option>'+
+    ACCOUNTS.map(a=>`<option value="${a}"${a===cur?' selected':''}>${a}</option>`).join('');
+}
+
+function renderLotList(){
+  const el=document.getElementById('lotList');
+  el.innerHTML=LOTS_LIST.map((l,i)=>`
+    <div class="account-row">
+      <span class="account-row-name">${l}</span>
+      <div class="account-row-actions">
+        <button class="btn-rename" onclick="renameLot(${i})">変更</button>
+        <button class="btn-remove" onclick="removeLot(${i})">削除</button>
+      </div>
+    </div>`).join('');
+}
+
+async function addAccount(){
+  const name=document.getElementById('newAccountName').value.trim();
+  if(!name)return;
+  await sbInsert('accounts',{id:'acc-'+Date.now(),name});
+  ACCOUNTS.push(name);
+  document.getElementById('newAccountName').value='';
+  renderAccountList();
+}
+
+async function renameAccount(i){
+  const newName=prompt('新しい団体名を入力してください：',ACCOUNTS[i]);
+  if(!newName||newName===ACCOUNTS[i])return;
+  const oldName=ACCOUNTS[i];
+  // Update in Supabase accounts table
+  const rows=await sbGet('accounts',`name=eq.${encodeURIComponent(oldName)}`);
+  if(rows&&rows[0])await sbUpdate('accounts',rows[0].id,{name:newName});
+  ACCOUNTS[i]=newName;
+  renderAccountList();
+}
+
+async function removeAccount(i){
+  if(!confirm(`「${ACCOUNTS[i]}」を削除しますか？`))return;
+  const name=ACCOUNTS[i];
+  const rows=await sbGet('accounts',`name=eq.${encodeURIComponent(name)}`);
+  if(rows&&rows[0])await sbDelete('accounts',rows[0].id);
+  ACCOUNTS.splice(i,1);
+  renderAccountList();
+}
+
+function addLot(){
+  const name=document.getElementById('newLotName').value.trim();
+  if(!name)return;
+  LOTS_LIST.push(name);
+  document.getElementById('newLotName').value='';
+  renderLotList();
+  if(selectedDate)renderPanel(...selectedDate);
+  renderCal();
+}
+
+function renameLot(i){
+  const newName=prompt('新しい駐車場名を入力してください：',LOTS_LIST[i]);
+  if(!newName||newName===LOTS_LIST[i])return;
+  LOTS_LIST[i]=newName;
+  renderLotList();
+  if(selectedDate)renderPanel(...selectedDate);
+  renderCal();
+}
+
+function removeLot(i){
+  if(!confirm(`「${LOTS_LIST[i]}」を削除しますか？`))return;
+  LOTS_LIST.splice(i,1);
+  renderLotList();
+  if(selectedDate)renderPanel(...selectedDate);
+  renderCal();
+}
+
+function exportData(){
+  const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`meitokukan_data_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
 }
 
 document.getElementById('filterBar').querySelectorAll('.pill').forEach(pill=>{
@@ -460,6 +628,20 @@ async function doLogin(){
     document.getElementById('loginInput').focus();
   }
 }
+
+// アカウント選択肢を動的に更新（Supabaseから取得前のデフォルト）
+function populateLoginSelect(){
+  const sel=document.getElementById('loginAccount');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">-- 選択してください --</option>'+
+    ACCOUNTS.map(a=>`<option value="${a}"${a===cur?' selected':''}>${a}</option>`).join('');
+}
+
+// Supabaseからアカウント一覧を先読みしてセレクトを更新
+sbGet('accounts','select=id,name&order=created_at.asc').then(rows=>{
+  if(rows&&rows.length>0){ACCOUNTS=rows.map(r=>r.name);populateLoginSelect();}
+}).catch(()=>{populateLoginSelect();});
+populateLoginSelect();
 
 // セッション維持
 if(sessionStorage.getItem('meitoku_auth')==='1'){
