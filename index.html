@@ -108,6 +108,78 @@ body{font-family:'Hiragino Kaku Gothic Pro','Yu Gothic',Meiryo,sans-serif;backgr
 .login-error{color:#c0392b;font-size:11px;margin-top:6px;min-height:16px}
 .logout-btn{background:rgba(255,255,255,.15);border:none;color:#fff;font-size:11px;padding:4px 10px;border-radius:10px;cursor:pointer;font-family:inherit}
 .logout-btn:hover{background:rgba(255,255,255,.3)}
+/* ===== SETTINGS ===== */
+.settings-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:8500;display:flex;align-items:center;justify-content:center}
+.settings-box{background:#fff;border-radius:14px;padding:24px;width:92%;max-width:440px;max-height:88vh;overflow-y:auto}
+.settings-box h2{font-size:15px;font-weight:700;color:#1a3a5c;margin-bottom:18px}
+.settings-section{margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #eef2f7}
+.settings-section:last-child{border-bottom:none;margin-bottom:0}
+.settings-section h3{font-size:11px;font-weight:700;color:#556677;margin-bottom:10px;letter-spacing:.04em;text-transform:uppercase}
+.settings-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.settings-row label{font-size:12px;color:#556677;min-width:80px}
+.settings-row input[type=text]{flex:1;padding:7px 10px;border:1px solid #c8d8ea;border-radius:6px;font-size:12px;font-family:inherit}
+.settings-row input[type=color]{width:44px;height:32px;border:1px solid #c8d8ea;border-radius:6px;cursor:pointer;padding:2px}
+.color-preview{width:28px;height:28px;border-radius:50%;border:2px solid #e0e8f0;flex-shrink:0}
+.pw-input{width:100%;padding:8px 10px;border:1px solid #c8d8ea;border-radius:6px;font-size:13px;font-family:inherit;margin-bottom:8px}
+.settings-btn{padding:8px 18px;background:#1a3a5c;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600}
+.settings-btn:hover{background:#2c5282}
+.settings-msg{font-size:11px;margin-top:6px;min-height:16px}
+.settings-msg.ok{color:#1d9e75}.settings-msg.err{color:#c0392b}
+/* ===== MOBILE ===== */
+@media(max-width:600px){
+  .topbar{padding:8px 12px;flex-wrap:wrap;gap:6px}
+  .topbar-left h1{font-size:12px}
+  .topbar-left p{display:none}
+  .topbar-right-btns{display:flex;flex-wrap:wrap;gap:4px}
+  .logout-btn{font-size:10px;padding:3px 7px}
+  .filter-pills{padding:6px 8px;gap:4px;overflow-x:auto;flex-wrap:nowrap}
+  .pill{font-size:10px;padding:3px 8px;white-space:nowrap;flex-shrink:0}
+  .add-event-top-btn{font-size:10px;padding:3px 8px;flex-shrink:0}
+  .jump-nav{padding:4px 8px;gap:3px;overflow-x:auto;flex-wrap:nowrap}
+  .jump-btn{font-size:10px;padding:2px 7px;flex-shrink:0;white-space:nowrap}
+  .cal-panel{padding:6px}
+  .month-title{font-size:11px;padding:5px 10px}
+  .day-cell{min-height:44px;padding:2px 2px}
+  .day-num{font-size:10px}
+  .dt{font-size:8px}
+  .park-panel{width:100%!important;min-width:0!important}
+  .section-title{font-size:10px}
+  .lot-name{font-size:11px}
+  .booking-item{padding:4px 6px}
+  .bcar{font-size:11px}
+  .btime{font-size:9px}
+  .form-row select,.form-row input[type=text]{font-size:13px}
+  .admin-box{padding:16px}
+  .modal-box{padding:16px}
+}
+/* ===== PRINT ===== */
+@media print{
+  .login-overlay,.topbar,.filter-pills,.jump-nav,.park-panel,
+  .add-event-top-btn,.logout-btn,.admin-overlay,.modal-overlay,
+  .settings-overlay,.print-modal-overlay{display:none!important}
+  body{background:#fff!important;font-family:'Yu Gothic','Hiragino Kaku Gothic Pro',Meiryo,sans-serif}
+  .app{display:block!important}
+  .main-area{display:block!important}
+  .cal-panel{padding:0!important;overflow:visible!important}
+  .month-block{break-inside:avoid;box-shadow:none!important;border:1px solid #ccc;margin-bottom:0}
+  .print-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px}
+  .month-title{font-size:11px!important;padding:5px 10px!important;background:#1a3a5c!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .day-cell{min-height:52px!important;border-color:#ddd!important}
+  .day-num{font-size:11px!important}
+  .dt{font-size:8px!important}
+  .dow-header{background:#eaf1fb!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  @page{size:A4 portrait;margin:10mm}
+  .page-break{page-break-after:always}
+}
+/* print modal */
+.print-modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9000;display:flex;align-items:center;justify-content:center}
+.print-modal-box{background:#fff;border-radius:14px;padding:28px;width:340px}
+.print-modal-box h2{font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:20px}
+.print-opt{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
+.print-opt-btn{padding:12px 16px;border:1.5px solid #c8d8ea;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;background:#fff;color:#1a2a3a;text-align:left;transition:all .1s}
+.print-opt-btn:hover{border-color:#1a3a5c;background:#eaf1fb}
+.print-opt-btn strong{display:block;margin-bottom:2px}
+.print-opt-btn span{font-size:11px;color:#8899aa}
 .admin-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:8000;display:flex;align-items:center;justify-content:center}
 .admin-box{background:#fff;border-radius:14px;padding:24px;width:92%;max-width:480px;max-height:85vh;overflow-y:auto}
 .admin-box h2{font-size:15px;font-weight:700;color:#1a3a5c;margin-bottom:16px}
@@ -176,8 +248,13 @@ body{font-family:'Hiragino Kaku Gothic Pro','Yu Gothic',Meiryo,sans-serif;backgr
     <h1>秋田明徳館高校　統合カレンダー　令和8年度</h1>
     <p>年間行事予定（定時制・通信制）＋ 駐車場予約システム</p>
   </div>
-  <div style="display:flex;align-items:center;gap:8px">
-    <div style="font-size:11px;background:rgba(255,255,255,.15);padding:3px 10px;border-radius:12px;color:#fff" id="accountBadge"></div>
+  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap" class="topbar-right-btns">
+    <div style="display:flex;align-items:center;gap:5px" id="accountBadge">
+      <div id="acctColorDot" style="width:10px;height:10px;border-radius:50%;background:#fff;flex-shrink:0"></div>
+      <span id="acctNameLabel" style="font-size:11px;color:#fff"></span>
+    </div>
+    <button class="logout-btn" onclick="openPrintModal()">印刷</button>
+    <button class="logout-btn" onclick="openSettings()">設定</button>
     <button class="logout-btn" onclick="openAdmin()">管理</button>
     <button class="logout-btn" onclick="doLogout()">ログアウト</button>
     <div class="sync-status" id="syncStatus">
@@ -266,6 +343,61 @@ body{font-family:'Hiragino Kaku Gothic Pro','Yu Gothic',Meiryo,sans-serif;backgr
   </div>
 </div>
 
+<div class="print-modal-overlay" id="printModal" style="display:none">
+  <div class="print-modal-box">
+    <button class="modal-close" onclick="closePrintModal()" style="float:right;background:none;border:none;font-size:18px;cursor:pointer;color:#556677">&#x2715;</button>
+    <h2>印刷・PDF出力</h2>
+    <div class="print-opt">
+      <button class="print-opt-btn" onclick="doPrint('print')">
+        <strong>印刷する</strong>
+        <span>プリンターに送信します（A4縦・2ヶ月/ページ）</span>
+      </button>
+      <button class="print-opt-btn" onclick="doPrint('pdf')">
+        <strong>PDFに出力</strong>
+        <span>ブラウザの印刷ダイアログから「PDFに保存」を選択してください</span>
+      </button>
+    </div>
+    <div style="font-size:11px;color:#8899aa;line-height:1.6">
+      ※ PDF出力時は印刷ダイアログの「送信先」を<br>「PDFに保存」に変更してください
+    </div>
+  </div>
+</div>
+
+<div class="settings-overlay" id="settingsOverlay" style="display:none">
+  <div class="settings-box">
+    <button class="modal-close" onclick="closeSettings()" style="float:right;background:none;border:none;font-size:18px;cursor:pointer;color:#556677">&#x2715;</button>
+    <h2>設定</h2>
+
+    <div class="settings-section">
+      <h3>団体プロフィール</h3>
+      <div class="settings-row">
+        <label>団体名</label>
+        <input type="text" id="settingName" placeholder="団体名" />
+      </div>
+      <div class="settings-row">
+        <label>カラー</label>
+        <input type="color" id="settingColor" value="#1a3a5c" oninput="document.getElementById('colorPreview').style.background=this.value;document.getElementById('settingColorHex').textContent=this.value"/>
+        <div class="color-preview" id="colorPreview"></div>
+        <span id="settingColorHex" style="font-size:11px;color:#8899aa"></span>
+      </div>
+      <button class="settings-btn" onclick="saveProfile()">プロフィールを保存</button>
+      <div class="settings-msg" id="profileMsg"></div>
+    </div>
+
+    <div class="settings-section">
+      <h3>パスワード変更</h3>
+      <div style="font-size:11px;color:#8899aa;margin-bottom:10px">現在のパスワードを確認後、新しいパスワードを設定できます</div>
+      <input type="password" class="pw-input" id="pwCurrent1" placeholder="現在のパスワード（1回目）" />
+      <input type="password" class="pw-input" id="pwCurrent2" placeholder="現在のパスワード（2回目・確認）" />
+      <div style="height:8px"></div>
+      <input type="password" class="pw-input" id="pwNew1" placeholder="新しいパスワード" />
+      <input type="password" class="pw-input" id="pwNew2" placeholder="新しいパスワード（確認）" />
+      <button class="settings-btn" onclick="changePassword()">パスワードを変更</button>
+      <div class="settings-msg" id="pwMsg"></div>
+    </div>
+  </div>
+</div>
+
 <div class="admin-overlay" id="adminOverlay" style="display:none">
   <div class="admin-box">
     <button class="admin-close" onclick="closeAdmin()">&#x2715;</button>
@@ -348,6 +480,7 @@ async function sbDelete(table,id){
 }
 
 let ACCOUNTS = ['団体A','団体B','団体C','団体D','団体E'];
+let ACCOUNT_DATA = {};
 let LOTS_LIST = ['駐車場2','駐車場3','駐車場4','駐車場9'];
 
 async function loadFromSupabase(){
@@ -368,7 +501,11 @@ async function loadFromSupabase(){
       events[r.date_key].push({id:r.id,type:r.type,text:r.text,account:r.account||'',start_time:r.start_time||'',end_time:r.end_time||'',end_date:r.end_date||'',group_id:r.group_id||''});
     });
     DB={bookings,events};
-    if(aRows&&aRows.length>0) ACCOUNTS=aRows.map(r=>r.name);
+    if(aRows&&aRows.length>0){
+      ACCOUNTS=aRows.map(r=>r.name);
+      ACCOUNT_DATA={};
+      aRows.forEach(r=>{ACCOUNT_DATA[r.name]={id:r.id,color:r.color||'#1a3a5c',password_hash:r.password_hash||'9af15b336e6a9619928537df30b2e6a2376569fcf9d7e773eccede65606529a0'};});
+    }
     setSyncStatus('ok','同期済み');
     localStorage.setItem('meitoku_r8_backup',JSON.stringify(DB));
   }catch(e){
@@ -943,11 +1080,97 @@ async function saveEventFromModal(){
   btn.disabled=false;btn.textContent=_modalEditId?'更新':'追加';
 }
 
+// ===== 印刷 =====
+function openPrintModal(){document.getElementById('printModal').style.display='flex';}
+function closePrintModal(){document.getElementById('printModal').style.display='none';}
+function doPrint(mode){
+  closePrintModal();
+  // Add print wrapper class for 2-col layout
+  document.getElementById('calPanel').classList.add('print-grid');
+  setTimeout(()=>{
+    window.print();
+    document.getElementById('calPanel').classList.remove('print-grid');
+  },200);
+}
+
+// ===== 設定 =====
+function openSettings(){
+  const acctData=ACCOUNT_DATA[currentAccount]||{};
+  document.getElementById('settingName').value=currentAccount;
+  const col=acctData.color||'#1a3a5c';
+  document.getElementById('settingColor').value=col;
+  document.getElementById('colorPreview').style.background=col;
+  document.getElementById('settingColorHex').textContent=col;
+  document.getElementById('profileMsg').textContent='';
+  document.getElementById('pwMsg').textContent='';
+  document.getElementById('pwCurrent1').value='';
+  document.getElementById('pwCurrent2').value='';
+  document.getElementById('pwNew1').value='';
+  document.getElementById('pwNew2').value='';
+  document.getElementById('settingsOverlay').style.display='flex';
+}
+function closeSettings(){document.getElementById('settingsOverlay').style.display='none';}
+
+async function saveProfile(){
+  const newName=document.getElementById('settingName').value.trim();
+  const newColor=document.getElementById('settingColor').value;
+  const msg=document.getElementById('profileMsg');
+  if(!newName){msg.className='settings-msg err';msg.textContent='団体名を入力してください';return;}
+  const acctData=ACCOUNT_DATA[currentAccount];
+  if(!acctData){msg.className='settings-msg err';msg.textContent='エラー：アカウントが見つかりません';return;}
+  try{
+    await sbUpdate('accounts',acctData.id,{name:newName,color:newColor});
+    // Update local data
+    const oldName=currentAccount;
+    ACCOUNT_DATA[newName]={...acctData,color:newColor};
+    if(newName!==oldName){
+      delete ACCOUNT_DATA[oldName];
+      const idx=ACCOUNTS.indexOf(oldName);
+      if(idx>=0)ACCOUNTS[idx]=newName;
+      currentAccount=newName;
+      sessionStorage.setItem('meitoku_account',newName);
+    }else{
+      ACCOUNT_DATA[currentAccount].color=newColor;
+    }
+    updateAccountBadge();
+    renderAccountList();
+    msg.className='settings-msg ok';msg.textContent='保存しました！';
+  }catch(e){msg.className='settings-msg err';msg.textContent='保存に失敗しました';}
+}
+
+async function changePassword(){
+  const c1=document.getElementById('pwCurrent1').value;
+  const c2=document.getElementById('pwCurrent2').value;
+  const n1=document.getElementById('pwNew1').value;
+  const n2=document.getElementById('pwNew2').value;
+  const msg=document.getElementById('pwMsg');
+  if(!c1||!c2||!n1||!n2){msg.className='settings-msg err';msg.textContent='全ての欄を入力してください';return;}
+  if(c1!==c2){msg.className='settings-msg err';msg.textContent='現在のパスワードが一致しません';return;}
+  if(n1!==n2){msg.className='settings-msg err';msg.textContent='新しいパスワードが一致しません';return;}
+  if(n1.length<4){msg.className='settings-msg err';msg.textContent='パスワードは4文字以上にしてください';return;}
+  const acctData=ACCOUNT_DATA[currentAccount];
+  const expectedHash=(acctData&&acctData.password_hash)?acctData.password_hash:PASSWORD_HASH;
+  const currentHash=await hashPassword(c1);
+  if(currentHash!==expectedHash){msg.className='settings-msg err';msg.textContent='現在のパスワードが違います';return;}
+  const newHash=await hashPassword(n1);
+  try{
+    await sbUpdate('accounts',acctData.id,{password_hash:newHash});
+    ACCOUNT_DATA[currentAccount].password_hash=newHash;
+    document.getElementById('pwCurrent1').value='';
+    document.getElementById('pwCurrent2').value='';
+    document.getElementById('pwNew1').value='';
+    document.getElementById('pwNew2').value='';
+    msg.className='settings-msg ok';msg.textContent='パスワードを変更しました！';
+  }catch(e){msg.className='settings-msg err';msg.textContent='変更に失敗しました';}
+}
+
 document.getElementById('filterBar').querySelectorAll('.pill').forEach(pill=>{
   pill.addEventListener('click',function(){
     activeFilter=this.dataset.f;
     document.querySelectorAll('.pill').forEach(p=>p.classList.remove('on'));
     this.classList.add('on');renderCal();
+    // Mobile: scroll to top of cal panel
+    if(window.innerWidth<=600)document.getElementById('calPanel').scrollTop=0;
   });
 });
 
@@ -963,18 +1186,18 @@ let currentAccount = '';
 async function doLogin(){
   const account = document.getElementById('loginAccount').value;
   const val = document.getElementById('loginInput').value;
-  if(!account){
-    document.getElementById('loginError').textContent='アカウントを選択してください';
-    return;
-  }
+  if(!account){document.getElementById('loginError').textContent='アカウントを選択してください';return;}
   const hashed = await hashPassword(val);
-  if(hashed === PASSWORD_HASH){
+  // Check per-account password first, fallback to global PASSWORD_HASH
+  const acctData = ACCOUNT_DATA[account];
+  const expectedHash = (acctData&&acctData.password_hash) ? acctData.password_hash : PASSWORD_HASH;
+  if(hashed === expectedHash){
     currentAccount = account;
     sessionStorage.setItem('meitoku_auth','1');
     sessionStorage.setItem('meitoku_account', account);
     document.getElementById('loginOverlay').style.display='none';
     document.getElementById('mainApp').style.display='flex';
-    document.getElementById('accountBadge').textContent = account;
+    updateAccountBadge();
     buildJumpNav();
     loadFromSupabase().then(()=>renderCal());
   } else {
@@ -982,6 +1205,13 @@ async function doLogin(){
     document.getElementById('loginInput').value='';
     document.getElementById('loginInput').focus();
   }
+}
+
+function updateAccountBadge(){
+  const acctData=ACCOUNT_DATA[currentAccount];
+  const color=(acctData&&acctData.color)||'#1a3a5c';
+  document.getElementById('acctColorDot').style.background=color;
+  document.getElementById('acctNameLabel').textContent=currentAccount;
 }
 
 // アカウント選択肢を動的に更新（Supabaseから取得前のデフォルト）
@@ -1003,9 +1233,8 @@ if(sessionStorage.getItem('meitoku_auth')==='1'){
   currentAccount = sessionStorage.getItem('meitoku_account')||'';
   document.getElementById('loginOverlay').style.display='none';
   document.getElementById('mainApp').style.display='flex';
-  document.getElementById('accountBadge').textContent = currentAccount;
   buildJumpNav();
-  loadFromSupabase().then(()=>renderCal());
+  loadFromSupabase().then(()=>{updateAccountBadge();renderCal();});
 } else {
   setTimeout(()=>document.getElementById('loginAccount').focus(), 100);
 }
