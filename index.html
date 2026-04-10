@@ -235,7 +235,7 @@ const TIMES=genTimes();
 
 let DB={bookings:{},events:{}};
 let selectedDate=null,activeFilter='all',editingBooking=null;
-let showAddEventForm={},showBookingForm={},_evType='teiji';
+let showAddEventForm={},showBookingForm={},_evType='teiji',_editingEventId=null;
 
 function setSyncStatus(state,text){
   document.getElementById('syncDot').className='sync-dot'+(state==='ok'?'':state==='loading'?' loading':' error');
@@ -277,7 +277,7 @@ async function loadFromSupabase(){
     const events={};
     eRows.forEach(r=>{
       if(!events[r.date_key])events[r.date_key]=[];
-      events[r.date_key].push({id:r.id,type:r.type,text:r.text,account:r.account||''});
+      events[r.date_key].push({id:r.id,type:r.type,text:r.text,account:r.account||'',start_time:r.start_time||'',end_time:r.end_time||''});
     });
     DB={bookings,events};
     if(aRows&&aRows.length>0) ACCOUNTS=aRows.map(r=>r.name);
@@ -324,7 +324,10 @@ function renderCal(){
       else if(closed)tags+=`<div class="dt dt-closed">${closed}</div>`;
       if(teiji)tags+=`<div class="dt dt-teiji">${teiji}</div>`;
       if(tsushin)tags+=`<div class="dt dt-tsushin">${tsushin}</div>`;
-      extraEvs.forEach(ev=>tags+=`<div class="dt dt-${ev.type==='teiji'?'teiji':ev.type==='tsushin'?'tsushin':ev.type==='sustina'?'sustina':'closed'}">${ev.text}</div>`);
+      extraEvs.forEach(ev=>{
+        const tStr=ev.start_time?` ${ev.start_time}${ev.end_time?'〜'+ev.end_time:''}`:'' ;
+        tags+=`<div class="dt dt-${ev.type==='teiji'?'teiji':ev.type==='tsushin'?'tsushin':ev.type==='sustina'?'sustina':'closed'}">${ev.text}${tStr}</div>`;
+      });
       gridHtml+=`<div class="day-cell ${bgCls}${isSel?' selected':''}" data-y="${y}" data-m="${m}" data-d="${d}">
         <div class="day-num ${numCls}">${d}</div>
         <div class="day-tags">${tags}</div>
@@ -364,20 +367,31 @@ function renderPanel(y,m,d){
   events.forEach(ev=>{
     const cls=ev.type==='teiji'?'ev-teiji':ev.type==='tsushin'?'ev-tsushin':ev.type==='hol'?'ev-hol':ev.type==='sustina'?'ev-sustina':'ev-closed';
     const lbl=ev.type==='teiji'?'定':ev.type==='tsushin'?'通':ev.type==='hol'?'祝':ev.type==='sustina'?'サ':'休';
-    const canDel=ev.id&&!ev.id.startsWith('base')&&(!ev.account||ev.account===currentAccount);
+    const canEdit=ev.id&&!ev.id.startsWith('base')&&(!ev.account||ev.account===currentAccount);
     const evOwner=ev.account&&!ev.id.startsWith('base')?`<span style="font-size:9px;opacity:.6;margin-left:4px">${ev.account}</span>`:'';
-    h+=`<div class="event-item ${cls}"><span class="ev-label">${lbl}</span><span style="flex:1">${ev.text}${evOwner}</span>${canDel?`<button class="ev-del" onclick="deleteEvent('${dk}','${ev.id}')">&#x2715;</button>`:''}</div>`;
+    const timeStr=ev.start_time?`<span style="font-size:9px;background:rgba(0,0,0,.08);padding:1px 5px;border-radius:3px;margin-left:4px">${ev.start_time}${ev.end_time?' 〜 '+ev.end_time:''}</span>`:'';
+    h+=`<div class="event-item ${cls}"><span class="ev-label">${lbl}</span>
+      <span style="flex:1">${ev.text}${timeStr}${evOwner}</span>
+      ${canEdit?`<button class="btn-edit" style="flex-shrink:0" onclick="startEditEvent('${dk}','${ev.id}')">変更</button>
+      <button class="ev-del" onclick="deleteEvent('${dk}','${ev.id}')">&#x2715;</button>`:''}</div>`;
   });
   if(showAddEventForm[dk]){
+    const editEv=_editingEventId&&DB.events[dk]?DB.events[dk].find(e=>e.id===_editingEventId):null;
+    const tOpts=TIMES.map(t=>`<option value="${t}"${editEv&&editEv.start_time===t?' selected':''}>${t}</option>`).join('');
+    const eOpts=TIMES.map(t=>`<option value="${t}"${editEv&&editEv.end_time===t?' selected':''}>${t}</option>`).join('');
     h+=`<div class="form-box"><div class="form-row"><label>種別</label><div class="type-btns">
       <button class="type-btn${_evType==='teiji'?' sel-teiji':''}" onclick="setEvType('teiji')">定時制</button>
       <button class="type-btn${_evType==='tsushin'?' sel-tsushin':''}" onclick="setEvType('tsushin')">通信制</button>
       <button class="type-btn${_evType==='closed'?' sel-closed':''}" onclick="setEvType('closed')">閉館・休日</button>
       <button class="type-btn${_evType==='sustina'?' sel-sustina':''}" onclick="setEvType('sustina')">サスティナ秋田</button>
     </div></div>
-    <div class="form-row"><label>行事名</label><input type="text" id="evText" placeholder="行事名を入力"/></div>
+    <div class="form-row"><label>行事名</label><input type="text" id="evText" placeholder="行事名を入力" value="${editEv?editEv.text:''}"/></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="form-row"><label>開始時間（任意）</label><select id="evStart"><option value="">未設定</option>${tOpts}</select></div>
+      <div class="form-row"><label>終了時間（任意）</label><select id="evEnd"><option value="">未設定</option>${eOpts}</select></div>
+    </div>
     <div class="form-actions"><button class="btn-cancel-f" onclick="toggleEvForm('${dk}')">キャンセル</button>
-    <button class="btn-save" id="evSaveBtn" onclick="saveEvent('${dk}')">追加</button></div></div>`;
+    <button class="btn-save" id="evSaveBtn" onclick="saveEvent('${dk}')">${editEv?'更新':'追加'}</button></div></div>`;
   }else{h+=`<button class="add-btn" onclick="toggleEvForm('${dk}')">+ 行事を追加</button>`;}
   h+=`</div><div class="section-block"><div class="section-title">駐車場予約（4台）</div>`;
   getLOTS().forEach(lot=>{
@@ -409,23 +423,42 @@ function renderPanel(y,m,d){
   h+=`</div>`;pp.innerHTML=h;
 }
 
-function toggleEvForm(dk){showAddEventForm[dk]=!showAddEventForm[dk];if(selectedDate)renderPanel(...selectedDate);}
+function toggleEvForm(dk){showAddEventForm[dk]=!showAddEventForm[dk];_editingEventId=null;if(selectedDate)renderPanel(...selectedDate);}
+function startEditEvent(dk,id){
+  const ev=DB.events[dk]&&DB.events[dk].find(e=>e.id===id);
+  if(!ev)return;
+  _evType=ev.type;
+  _editingEventId=id;
+  showAddEventForm[dk]=true;
+  if(selectedDate)renderPanel(...selectedDate);
+}
 function setEvType(t){_evType=t;if(selectedDate)renderPanel(...selectedDate);}
 
 async function saveEvent(dk){
   const el=document.getElementById('evText'),text=el?el.value.trim():'';
   if(!text)return;
+  const startT=document.getElementById('evStart')?document.getElementById('evStart').value:'';
+  const endT=document.getElementById('evEnd')?document.getElementById('evEnd').value:'';
   const btn=document.getElementById('evSaveBtn');
   if(btn){btn.disabled=true;btn.textContent='保存中...';}
   setSyncStatus('loading','保存中...');
   try{
-    const rows=await sbInsert('events',{id:'ev-'+Date.now(),date_key:dk,type:_evType,text,account:currentAccount});
-    const id=rows[0].id;
-    if(!DB.events[dk])DB.events[dk]=[];
-    DB.events[dk].push({type:_evType,text,id,account:currentAccount});
+    if(_editingEventId){
+      await sbUpdate('events',_editingEventId,{type:_evType,text,start_time:startT,end_time:endT});
+      if(DB.events[dk]){
+        const idx=DB.events[dk].findIndex(e=>e.id===_editingEventId);
+        if(idx>=0)DB.events[dk][idx]={...DB.events[dk][idx],type:_evType,text,start_time:startT,end_time:endT};
+      }
+    }else{
+      const rows=await sbInsert('events',{id:'ev-'+Date.now(),date_key:dk,type:_evType,text,account:currentAccount,start_time:startT,end_time:endT});
+      const id=rows[0].id;
+      if(!DB.events[dk])DB.events[dk]=[];
+      DB.events[dk].push({type:_evType,text,id,account:currentAccount,start_time:startT,end_time:endT});
+    }
     setSyncStatus('ok','同期済み');
   }catch(e){setSyncStatus('error','保存失敗');}
   showAddEventForm[dk]=false;
+  _editingEventId=null;
   if(selectedDate)renderPanel(...selectedDate);renderCal();
 }
 
