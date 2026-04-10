@@ -123,6 +123,13 @@ body{font-family:'Hiragino Kaku Gothic Pro','Yu Gothic',Meiryo,sans-serif;backgr
 .admin-input-row button{padding:7px 14px;background:#1a3a5c;color:#fff;border:none;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap}
 .admin-close{float:right;background:none;border:none;font-size:18px;cursor:pointer;color:#556677;margin-top:-4px}
 .owner-tag{font-size:9px;background:#1a3a5c;color:#fff;padding:1px 5px;border-radius:3px;margin-left:4px}
+.modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:7000;display:flex;align-items:center;justify-content:center}
+.modal-box{background:#fff;border-radius:14px;padding:24px 24px 20px;width:92%;max-width:460px;max-height:90vh;overflow-y:auto}
+.modal-box h2{font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:16px}
+.modal-close{float:right;background:none;border:none;font-size:18px;cursor:pointer;color:#556677;margin-top:-4px}
+.date-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.add-event-top-btn{display:flex;align-items:center;gap:6px;padding:6px 16px;background:#1a3a5c;color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600}
+.add-event-top-btn:hover{background:#2c5282}
 </style>
 </head>
 <body>
@@ -170,12 +177,56 @@ body{font-family:'Hiragino Kaku Gothic Pro','Yu Gothic',Meiryo,sans-serif;backgr
   <span class="pill" data-f="teiji">定時制行事</span>
   <span class="pill" data-f="tsushin">通信制行事</span>
   <span class="pill" data-f="park">駐車場予約あり</span>
+  <button class="add-event-top-btn" onclick="openEventModal()">＋ 行事を追加</button>
 </div>
 <div class="jump-nav" id="jumpNav"></div>
 <div class="main-area">
   <div class="cal-panel" id="calPanel"><div style="padding:20px;color:#667788;font-size:13px">読み込み中...</div></div>
   <div class="park-panel" id="parkPanel"></div>
 </div>
+</div>
+
+<div class="modal-overlay" id="eventModal" style="display:none">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeEventModal()">&#x2715;</button>
+    <h2>行事を追加・編集</h2>
+    <div class="form-row" style="margin-bottom:10px"><label>種別</label>
+      <div class="type-btns" id="modalTypeBtns">
+        <button class="type-btn sel-teiji" data-t="teiji" onclick="setModalEvType('teiji')">定時制</button>
+        <button class="type-btn" data-t="tsushin" onclick="setModalEvType('tsushin')">通信制</button>
+        <button class="type-btn" data-t="closed" onclick="setModalEvType('closed')">閉館・休日</button>
+        <button class="type-btn" data-t="sustina" onclick="setModalEvType('sustina')">サスティナ秋田</button>
+      </div>
+    </div>
+    <div class="form-row" style="margin-bottom:10px">
+      <label>行事名</label>
+      <input type="text" id="modalEvText" placeholder="行事名を入力" style="width:100%;padding:8px 10px;border:1px solid #c8d8ea;border-radius:6px;font-size:13px;font-family:inherit"/>
+    </div>
+    <div class="date-grid">
+      <div class="form-row"><label>開始日</label>
+        <select id="modalStartDate" style="width:100%;padding:7px 8px;border:1px solid #c8d8ea;border-radius:6px;font-size:12px;font-family:inherit"></select>
+      </div>
+      <div class="form-row"><label>終了日（複数日の場合）</label>
+        <select id="modalEndDate" style="width:100%;padding:7px 8px;border:1px solid #c8d8ea;border-radius:6px;font-size:12px;font-family:inherit"></select>
+      </div>
+    </div>
+    <div class="date-grid">
+      <div class="form-row"><label>開始時間（任意）</label>
+        <select id="modalStartTime" style="width:100%;padding:7px 8px;border:1px solid #c8d8ea;border-radius:6px;font-size:12px;font-family:inherit">
+          <option value="">未設定</option>
+        </select>
+      </div>
+      <div class="form-row"><label>終了時間（任意）</label>
+        <select id="modalEndTime" style="width:100%;padding:7px 8px;border:1px solid #c8d8ea;border-radius:6px;font-size:12px;font-family:inherit">
+          <option value="">未設定</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+      <button class="btn-cancel-f" onclick="closeEventModal()">キャンセル</button>
+      <button class="btn-save" id="modalSaveBtn" onclick="saveEventFromModal()">追加</button>
+    </div>
+  </div>
 </div>
 
 <div class="admin-overlay" id="adminOverlay" style="display:none">
@@ -277,7 +328,7 @@ async function loadFromSupabase(){
     const events={};
     eRows.forEach(r=>{
       if(!events[r.date_key])events[r.date_key]=[];
-      events[r.date_key].push({id:r.id,type:r.type,text:r.text,account:r.account||'',start_time:r.start_time||'',end_time:r.end_time||''});
+      events[r.date_key].push({id:r.id,type:r.type,text:r.text,account:r.account||'',start_time:r.start_time||'',end_time:r.end_time||'',end_date:r.end_date||'',group_id:r.group_id||''});
     });
     DB={bookings,events};
     if(aRows&&aRows.length>0) ACCOUNTS=aRows.map(r=>r.name);
@@ -326,7 +377,8 @@ function renderCal(){
       if(tsushin)tags+=`<div class="dt dt-tsushin">${tsushin}</div>`;
       extraEvs.forEach(ev=>{
         const tStr=ev.start_time?` ${ev.start_time}${ev.end_time?'〜'+ev.end_time:''}`:'' ;
-        tags+=`<div class="dt dt-${ev.type==='teiji'?'teiji':ev.type==='tsushin'?'tsushin':ev.type==='sustina'?'sustina':'closed'}">${ev.text}${tStr}</div>`;
+        const multiMark=ev.end_date&&ev.end_date!==dk?'▶':'' ;
+        tags+=`<div class="dt dt-${ev.type==='teiji'?'teiji':ev.type==='tsushin'?'tsushin':ev.type==='sustina'?'sustina':'closed'}">${multiMark}${ev.text}${tStr}</div>`;
       });
       gridHtml+=`<div class="day-cell ${bgCls}${isSel?' selected':''}" data-y="${y}" data-m="${m}" data-d="${d}">
         <div class="day-num ${numCls}">${d}</div>
@@ -392,7 +444,7 @@ function renderPanel(y,m,d){
     </div>
     <div class="form-actions"><button class="btn-cancel-f" onclick="toggleEvForm('${dk}')">キャンセル</button>
     <button class="btn-save" id="evSaveBtn" onclick="saveEvent('${dk}')">${editEv?'更新':'追加'}</button></div></div>`;
-  }else{h+=`<button class="add-btn" onclick="toggleEvForm('${dk}')">+ 行事を追加</button>`;}
+  }else{h+=`<button class="add-btn" onclick="openEventModal('${dk}')">+ 行事を追加</button>`;}
   h+=`</div><div class="section-block"><div class="section-title">駐車場予約（4台）</div>`;
   getLOTS().forEach(lot=>{
     const slots=bk[lot]||[],fk=`${dk}-${lot}`,isFree=slots.length===0;
@@ -425,12 +477,7 @@ function renderPanel(y,m,d){
 
 function toggleEvForm(dk){showAddEventForm[dk]=!showAddEventForm[dk];_editingEventId=null;if(selectedDate)renderPanel(...selectedDate);}
 function startEditEvent(dk,id){
-  const ev=DB.events[dk]&&DB.events[dk].find(e=>e.id===id);
-  if(!ev)return;
-  _evType=ev.type;
-  _editingEventId=id;
-  showAddEventForm[dk]=true;
-  if(selectedDate)renderPanel(...selectedDate);
+  openEventModal(dk,id,dk);
 }
 function setEvType(t){_evType=t;if(selectedDate)renderPanel(...selectedDate);}
 
@@ -619,6 +666,110 @@ function exportData(){
   a.href=URL.createObjectURL(blob);
   a.download=`meitokukan_data_${new Date().toISOString().slice(0,10)}.json`;
   a.click();
+}
+
+// ===== 行事追加モーダル =====
+const ALL_DATES = [];
+MONTHS.forEach(([y,m])=>{
+  const days=daysInMonth(y,m);
+  for(let d=1;d<=days;d++) ALL_DATES.push({y,m,d,key:dateKey(y,m,d),label:`${y}年${m}月${d}日`});
+});
+
+function populateDateSelects(startKey='',endKey=''){
+  const ss=document.getElementById('modalStartDate');
+  const es=document.getElementById('modalEndDate');
+  ss.innerHTML=ALL_DATES.map(dt=>`<option value="${dt.key}"${dt.key===startKey?' selected':''}>${dt.label}</option>`).join('');
+  es.innerHTML='<option value="">開始日と同じ</option>'+ALL_DATES.map(dt=>`<option value="${dt.key}"${dt.key===endKey?' selected':''}>${dt.label}</option>`).join('');
+}
+
+function populateTimeSelects(startT='',endT=''){
+  const ts=document.getElementById('modalStartTime');
+  const te=document.getElementById('modalEndTime');
+  const opts='<option value="">未設定</option>'+TIMES.map(t=>`<option value="${t}">${t}</option>`).join('');
+  ts.innerHTML=opts; te.innerHTML=opts;
+  if(startT)ts.value=startT;
+  if(endT)te.value=endT;
+}
+
+let _modalEvType='teiji';
+let _modalEditId=null;
+let _modalEditDk=null;
+
+function openEventModal(prefillDate=null,editId=null,editDk=null){
+  _modalEditId=editId; _modalEditDk=editDk;
+  let startKey=prefillDate||ALL_DATES[0].key;
+  let endKey='', startT='', endT='', text='', type='teiji';
+  if(editId&&editDk){
+    const ev=DB.events[editDk]&&DB.events[editDk].find(e=>e.id===editId);
+    if(ev){text=ev.text;type=ev.type;startT=ev.start_time||'';endT=ev.end_time||'';startKey=editDk;endKey=ev.end_date||'';}
+  }
+  _modalEvType=type;
+  populateDateSelects(startKey,endKey);
+  populateTimeSelects(startT,endT);
+  document.getElementById('modalEvText').value=text;
+  document.getElementById('modalSaveBtn').textContent=editId?'更新':'追加';
+  document.querySelectorAll('#modalTypeBtns .type-btn').forEach(b=>{
+    b.className='type-btn'+(b.dataset.t===type?' sel-'+type:'');
+  });
+  document.getElementById('eventModal').style.display='flex';
+  setTimeout(()=>document.getElementById('modalEvText').focus(),100);
+}
+
+function closeEventModal(){
+  document.getElementById('eventModal').style.display='none';
+  _modalEditId=null; _modalEditDk=null;
+}
+
+function setModalEvType(t){
+  _modalEvType=t;
+  document.querySelectorAll('#modalTypeBtns .type-btn').forEach(b=>{
+    b.className='type-btn'+(b.dataset.t===t?' sel-'+t:'');
+  });
+}
+
+function getDatesInRange(startKey,endKey){
+  if(!endKey||endKey===startKey)return[startKey];
+  const sidx=ALL_DATES.findIndex(d=>d.key===startKey);
+  const eidx=ALL_DATES.findIndex(d=>d.key===endKey);
+  if(sidx<0||eidx<0||eidx<sidx)return[startKey];
+  return ALL_DATES.slice(sidx,eidx+1).map(d=>d.key);
+}
+
+async function saveEventFromModal(){
+  const text=document.getElementById('modalEvText').value.trim();
+  if(!text){document.getElementById('modalEvText').focus();return;}
+  const startKey=document.getElementById('modalStartDate').value;
+  const endKey=document.getElementById('modalEndDate').value;
+  const startT=document.getElementById('modalStartTime').value;
+  const endT=document.getElementById('modalEndTime').value;
+  const dates=getDatesInRange(startKey,endKey||startKey);
+  const btn=document.getElementById('modalSaveBtn');
+  btn.disabled=true;btn.textContent='保存中...';
+  setSyncStatus('loading','保存中...');
+  try{
+    if(_modalEditId&&_modalEditDk){
+      // Update existing
+      await sbUpdate('events',_modalEditId,{type:_modalEvType,text,start_time:startT,end_time:endT,end_date:endKey||''});
+      if(DB.events[_modalEditDk]){
+        const idx=DB.events[_modalEditDk].findIndex(e=>e.id===_modalEditId);
+        if(idx>=0)DB.events[_modalEditDk][idx]={...DB.events[_modalEditDk][idx],type:_modalEvType,text,start_time:startT,end_time:endT,end_date:endKey||''};
+      }
+    }else{
+      // Insert for each date in range
+      const groupId='grp-'+Date.now();
+      for(const dk of dates){
+        const newId='ev-'+Date.now()+'-'+dk;
+        await sbInsert('events',{id:newId,date_key:dk,type:_modalEvType,text,account:currentAccount,start_time:startT,end_time:endT,end_date:endKey||'',group_id:groupId});
+        if(!DB.events[dk])DB.events[dk]=[];
+        DB.events[dk].push({id:newId,type:_modalEvType,text,account:currentAccount,start_time:startT,end_time:endT,end_date:endKey||'',group_id:groupId});
+      }
+    }
+    setSyncStatus('ok','同期済み');
+    closeEventModal();
+    renderCal();
+    if(selectedDate)renderPanel(...selectedDate);
+  }catch(e){setSyncStatus('error','保存失敗');}
+  btn.disabled=false;btn.textContent=_modalEditId?'更新':'追加';
 }
 
 document.getElementById('filterBar').querySelectorAll('.pill').forEach(pill=>{
