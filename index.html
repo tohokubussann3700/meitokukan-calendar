@@ -148,8 +148,10 @@ body{font-family:'Hiragino Kaku Gothic Pro','Yu Gothic',Meiryo,sans-serif;backgr
 </div>
 <script>
 // ============================================================
-// ★ GASデプロイ後、ここにURLを貼り付けてください ★
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbxSJ3DmujWAhSRY_T02IitoKSi1Z_7EdJsmZQzlLBXrB8gDTZbDf8I62Pj6JTIy7xfWFw/exec';
+// Supabase 設定
+const SUPABASE_URL = 'https://gtrbknmyjfncidlnqgrg.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0cmJrbm15amZuY2lkbG5xZ3JnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MDAyNzIsImV4cCI6MjA5MTM3NjI3Mn0.DpwnqK6PqoZP7cZs1HJjrzdlKnEEVW2ttTTCNlek6yc';
+const SB_HEADERS = {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY};
 // ============================================================
 
 const LOTS=['駐車場2','駐車場3','駐車場4','駐車場9'];
@@ -170,27 +172,46 @@ const TIMES=genTimes();
 
 let DB={bookings:{},events:{}};
 let selectedDate=null,activeFilter='all',editingBooking=null;
-let showAddEventForm={},showBookingForm={},_evType='teiji',gasReady=false;
+let showAddEventForm={},showBookingForm={},_evType='teiji';
 
 function setSyncStatus(state,text){
   document.getElementById('syncDot').className='sync-dot'+(state==='ok'?'':state==='loading'?' loading':' error');
   document.getElementById('syncText').textContent=text;
 }
 
-async function gasGet(p){const r=await fetch(GAS_URL+'?'+new URLSearchParams(p));return r.json();}
-async function gasPost(b){const r=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(b)});return r.json();}
+async function sbGet(table,filter=''){
+  const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}?${filter}`,{headers:SB_HEADERS});
+  return r.json();
+}
+async function sbInsert(table,body){
+  const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}`,{method:'POST',headers:{...SB_HEADERS,'Prefer':'return=representation'},body:JSON.stringify(body)});
+  return r.json();
+}
+async function sbUpdate(table,id,body){
+  const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`,{method:'PATCH',headers:{...SB_HEADERS,'Prefer':'return=representation'},body:JSON.stringify(body)});
+  return r.json();
+}
+async function sbDelete(table,id){
+  const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`,{method:'DELETE',headers:SB_HEADERS});
+  return r.ok;
+}
 
-async function loadFromGAS(){
-  if(GAS_URL.includes('ここに')){
-    setSyncStatus('error','GAS未設定（ローカル動作中）');
-    try{DB=JSON.parse(localStorage.getItem('meitoku_r8_local')||'{"bookings":{},"events":{}}');}catch(e){DB={bookings:{},events:{}};}
-    return;
-  }
+async function loadFromSupabase(){
   setSyncStatus('loading','データ読み込み中...');
   try{
-    const data=await gasGet({action:'getAll'});
-    if(data.error)throw new Error(data.error);
-    DB=data;gasReady=true;
+    const [bRows,eRows]=await Promise.all([sbGet('bookings'),sbGet('events')]);
+    const bookings={};
+    bRows.forEach(r=>{
+      if(!bookings[r.date_key])bookings[r.date_key]={};
+      if(!bookings[r.date_key][r.lot])bookings[r.date_key][r.lot]=[];
+      bookings[r.date_key][r.lot].push({id:r.id,start:r.start_time,end:r.end_time,car:r.car});
+    });
+    const events={};
+    eRows.forEach(r=>{
+      if(!events[r.date_key])events[r.date_key]=[];
+      events[r.date_key].push({id:r.id,type:r.type,text:r.text});
+    });
+    DB={bookings,events};
     setSyncStatus('ok','同期済み');
     localStorage.setItem('meitoku_r8_backup',JSON.stringify(DB));
   }catch(e){
@@ -208,9 +229,7 @@ function hasParkBooking(y,m,d){const bk=DB.bookings[dateKey(y,m,d)]||{};return L
 function renderCal(){
   const cp=document.getElementById('calPanel');
   let html='';
-  if(GAS_URL.includes('ここに')){
-    html+=`<div class="setup-banner" style="margin:10px"><strong>★ GAS URLの設定が必要です（データ共有を使う場合）</strong>GASをデプロイしてURLを取得後、このHTMLの <code>const GAS_URL = 'https://script.google.com/macros/s/AKfycbxSJ3DmujWAhSRY_T02IitoKSi1Z_7EdJsmZQzlLBXrB8gDTZbDf8I62Pj6JTIy7xfWFw/exec';</code> を書き換えてGitHubにアップロードしてください。<br>設定前でもカレンダー閲覧・ローカル保存は利用できます。</div>`;
-  }
+  
   MONTHS.forEach(([y,m,mname])=>{
     const days=daysInMonth(y,m),fd=firstDow(y,m);
     let eventDays=0,gridHtml='';
@@ -325,19 +344,22 @@ async function saveEvent(dk){
   if(!text)return;
   const btn=document.getElementById('evSaveBtn');
   if(btn){btn.disabled=true;btn.textContent='保存中...';}
-  let id='ev-'+Date.now();
-  if(gasReady){setSyncStatus('loading','保存中...');try{const r=await gasPost({action:'saveEvent',dk,type:_evType,text});id=r.id;setSyncStatus('ok','同期済み');}catch(e){setSyncStatus('error','保存失敗（ローカルに保存）');}}
-  if(!DB.events[dk])DB.events[dk]=[];
-  DB.events[dk].push({type:_evType,text,id});
+  setSyncStatus('loading','保存中...');
+  try{
+    const rows=await sbInsert('events',{id:'ev-'+Date.now(),date_key:dk,type:_evType,text});
+    const id=rows[0].id;
+    if(!DB.events[dk])DB.events[dk]=[];
+    DB.events[dk].push({type:_evType,text,id});
+    setSyncStatus('ok','同期済み');
+  }catch(e){setSyncStatus('error','保存失敗');}
   showAddEventForm[dk]=false;
-  if(!gasReady)localStorage.setItem('meitoku_r8_local',JSON.stringify(DB));
   if(selectedDate)renderPanel(...selectedDate);renderCal();
 }
 
 async function deleteEvent(dk,id){
-  if(gasReady){setSyncStatus('loading','削除中...');try{await gasPost({action:'deleteEvent',id});setSyncStatus('ok','同期済み');}catch(e){setSyncStatus('error','削除失敗');}}
+  setSyncStatus('loading','削除中...');
+  try{await sbDelete('events',id);setSyncStatus('ok','同期済み');}catch(e){setSyncStatus('error','削除失敗');}
   if(DB.events[dk])DB.events[dk]=DB.events[dk].filter(e=>e.id!==id);
-  if(!gasReady)localStorage.setItem('meitoku_r8_local',JSON.stringify(DB));
   if(selectedDate)renderPanel(...selectedDate);renderCal();
 }
 
@@ -346,20 +368,30 @@ function cancelBookingForm(dk,lot){showBookingForm[`${dk}-${lot}`]=false;editing
 
 async function saveBooking(dk,lot,sid){
   const fk=`${dk}-${lot}`,start=document.getElementById(`bs-${fk}`).value,end=document.getElementById(`be-${fk}`).value,car=document.getElementById(`bc-${fk}`).value.trim()||'車種未入力';
-  const isEdit=sid!=='new';let newId=isEdit?sid:'b-'+Date.now();
-  if(gasReady){setSyncStatus('loading','保存中...');try{const r=await gasPost({action:'saveBooking',dk,lot,start,end,car,...(isEdit?{id:sid}:{})});newId=r.id;setSyncStatus('ok','同期済み');}catch(e){setSyncStatus('error','保存失敗');}}
-  if(!DB.bookings[dk])DB.bookings[dk]={};if(!DB.bookings[dk][lot])DB.bookings[dk][lot]=[];
-  if(isEdit){const idx=DB.bookings[dk][lot].findIndex(s=>String(s.id)===String(sid));if(idx>=0)DB.bookings[dk][lot][idx]={start,end,car,id:newId};}
-  else DB.bookings[dk][lot].push({start,end,car,id:newId});
+  const isEdit=sid!=='new';
+  setSyncStatus('loading','保存中...');
+  try{
+    if(isEdit){
+      await sbUpdate('bookings',sid,{start_time:start,end_time:end,car});
+      if(!DB.bookings[dk])DB.bookings[dk]={};if(!DB.bookings[dk][lot])DB.bookings[dk][lot]=[];
+      const idx=DB.bookings[dk][lot].findIndex(s=>String(s.id)===String(sid));
+      if(idx>=0)DB.bookings[dk][lot][idx]={start,end,car,id:sid};
+    }else{
+      const newId='b-'+Date.now();
+      await sbInsert('bookings',{id:newId,date_key:dk,lot,start_time:start,end_time:end,car});
+      if(!DB.bookings[dk])DB.bookings[dk]={};if(!DB.bookings[dk][lot])DB.bookings[dk][lot]=[];
+      DB.bookings[dk][lot].push({start,end,car,id:newId});
+    }
+    setSyncStatus('ok','同期済み');
+  }catch(e){setSyncStatus('error','保存失敗');}
   showBookingForm[fk]=false;editingBooking=null;
-  if(!gasReady)localStorage.setItem('meitoku_r8_local',JSON.stringify(DB));
   if(selectedDate)renderPanel(...selectedDate);renderCal();
 }
 
 async function deleteBooking(dk,lot,sid){
-  if(gasReady){setSyncStatus('loading','削除中...');try{await gasPost({action:'deleteBooking',id:sid});setSyncStatus('ok','同期済み');}catch(e){setSyncStatus('error','削除失敗');}}
+  setSyncStatus('loading','削除中...');
+  try{await sbDelete('bookings',sid);setSyncStatus('ok','同期済み');}catch(e){setSyncStatus('error','削除失敗');}
   if(DB.bookings[dk]&&DB.bookings[dk][lot])DB.bookings[dk][lot]=DB.bookings[dk][lot].filter(s=>String(s.id)!==String(sid));
-  if(!gasReady)localStorage.setItem('meitoku_r8_local',JSON.stringify(DB));
   if(selectedDate)renderPanel(...selectedDate);renderCal();
 }
 
@@ -378,16 +410,22 @@ document.getElementById('filterBar').querySelectorAll('.pill').forEach(pill=>{
   });
 });
 
-const PASSWORD = '0000';
+const PASSWORD_HASH = '9af15b336e6a9619928537df30b2e6a2376569fcf9d7e773eccede65606529a0';
 
-function doLogin(){
+async function hashPassword(pw){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function doLogin(){
   const val = document.getElementById('loginInput').value;
-  if(val === PASSWORD){
+  const hashed = await hashPassword(val);
+  if(hashed === PASSWORD_HASH){
     sessionStorage.setItem('meitoku_auth','1');
     document.getElementById('loginOverlay').style.display='none';
     document.getElementById('mainApp').style.display='flex';
     buildJumpNav();
-    loadFromGAS().then(()=>renderCal());
+    loadFromSupabase().then(()=>renderCal());
   } else {
     document.getElementById('loginError').textContent='パスワードが違います';
     document.getElementById('loginInput').value='';
@@ -400,7 +438,7 @@ if(sessionStorage.getItem('meitoku_auth')==='1'){
   document.getElementById('loginOverlay').style.display='none';
   document.getElementById('mainApp').style.display='flex';
   buildJumpNav();
-  loadFromGAS().then(()=>renderCal());
+  loadFromSupabase().then(()=>renderCal());
 } else {
   setTimeout(()=>document.getElementById('loginInput').focus(), 100);
 }
