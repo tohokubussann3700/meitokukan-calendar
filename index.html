@@ -156,28 +156,36 @@ body{font-family:'Hiragino Kaku Gothic Pro','Yu Gothic',Meiryo,sans-serif;backgr
 @media print{
   .login-overlay,.topbar,.filter-pills,.jump-nav,.park-panel,
   .add-event-top-btn,.logout-btn,.admin-overlay,.modal-overlay,
-  .settings-overlay,.print-modal-overlay,.print-hide{display:none!important}
+  .settings-overlay,.print-modal-overlay{display:none!important}
   body{background:#fff!important;font-family:'Yu Gothic','Hiragino Kaku Gothic Pro',Meiryo,sans-serif}
-  .app{display:block!important}
-  .main-area{display:block!important}
-  .cal-panel{padding:4mm!important;overflow:visible!important}
-  .print-doc-header{display:flex!important}
-  .print-legend{display:flex!important}
-  .month-block{break-inside:avoid;box-shadow:none!important;border:1px solid #ccc;margin-bottom:0;display:block!important}
-  .month-block.print-hidden{display:none!important}
-  .print-page{page-break-after:always;padding-bottom:4mm}
+  .app,.main-area{display:block!important}
+  .cal-panel{padding:0!important;overflow:visible!important}
+  .month-block{display:none!important}
+  .print-doc-header{display:flex!important;align-items:center;justify-content:space-between;padding-bottom:3mm;margin-bottom:3mm;border-bottom:0.5px solid #ccc}
+  .print-legend{display:flex!important;flex-wrap:wrap;gap:6px;margin-bottom:3mm}
+  .print-page{display:flex!important;flex-direction:column;height:277mm;page-break-after:always;padding:0}
   .print-page:last-child{page-break-after:auto}
-  .print-2col{display:grid!important;grid-template-columns:1fr 1fr;gap:6px}
-  .month-title{font-size:10px!important;padding:4px 8px!important;background:#1a3a5c!important;color:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .day-cell{min-height:44px!important;border-color:#ddd!important;padding:2px 2px!important}
-  .day-num{font-size:10px!important}
-  .dt{font-size:7px!important;padding:0 2px!important}
-  .dt-teiji{background:#fff3cd!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .dt-tsushin{background:#d4edda!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .dt-closed{background:#fde8e8!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .dt-sustina{background:#e8d5f5!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .dow-header{background:#eaf1fb!important;font-size:9px!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  @page{size:A4 portrait;margin:8mm}
+  .print-month-wrap{flex:1;min-height:0;display:flex;flex-direction:column}
+  .print-month-wrap.two{flex:1;min-height:0}
+  .print-2row{flex:1;min-height:0;display:flex;flex-direction:column;gap:3mm}
+  .print-cal-block{flex:1;min-height:0;display:flex;flex-direction:column;border:0.5px solid #ccc;border-radius:2px;overflow:hidden}
+  .print-cal-hdr{background:#1a3a5c;color:#fff;font-size:9pt;font-weight:700;padding:2mm 3mm;flex-shrink:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .print-cal-grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,1fr)}
+  .print-dow{background:#eaf1fb;font-size:7pt;text-align:center;padding:1mm 0;color:#4a6080;font-weight:600;border-bottom:0.5px solid #c8d8ea;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .print-dow.ps{color:#c0392b}.print-dow.psa{color:#2471a3}
+  .print-day{border-right:0.5px solid #eee;border-bottom:0.5px solid #eee;padding:1mm 1.5mm;display:flex;flex-direction:column;gap:0.3mm;overflow:hidden}
+  .print-day.bg-hol{background:#fff0f0!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .print-day.bg-sat{background:#f5f9ff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .print-day.bg-sun{background:#fff5f5!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .print-dn{font-weight:700;font-size:8pt;line-height:1.2}
+  .print-dn.ps{color:#c0392b}.print-dn.psa{color:#2471a3}.print-dn.pn{color:#2c3e50}
+  .print-tag{font-size:5.5pt;padding:0 1mm;border-radius:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.6;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pt-te{background:#fff3cd;color:#7c5c00}
+  .pt-ts{background:#d4edda;color:#145c2a}
+  .pt-cl{background:#fde8e8;color:#801515}
+  .pt-su{background:#e8d5f5;color:#5b1a8a}
+  .print-pk{width:4px;height:4px;border-radius:50%;background:#1d9e75;flex-shrink:0;align-self:flex-end;margin-top:auto}
+  @page{size:A4 portrait;margin:10mm}
 }
 /* print modal */
 .print-modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9000;display:flex;align-items:center;justify-content:center}
@@ -1150,70 +1158,110 @@ function togglePrintMonth(key){
   renderPrintMonthGrid();
 }
 
+function buildPrintCalBlock(y,m,isSingle){
+  const days=new Date(y,m,0).getDate();
+  const fd=new Date(y,m-1,1).getDay();
+  const mname=MONTHS.find(mm=>mm[0]===y&&mm[1]===m);
+  const label=mname?`${mname[2]}（令和${y===2026?'8':'9'}年${m}月）`:`${y}年${m}月`;
+  const DOW_P=['日','月','火','水','木','金','土'];
+  let html=`<div class="print-cal-block">
+    <div class="print-cal-hdr">${label}</div>
+    <div class="print-cal-grid">`;
+  DOW_P.forEach((d,i)=>html+=`<div class="print-dow ${i===0?'ps':i===6?'psa':''}">${d}</div>`);
+  for(let i=0;i<fd;i++)html+=`<div class="print-day"></div>`;
+  for(let d=1;d<=days;d++){
+    const dow=new Date(y,m-1,d).getDay();
+    const mk=`${m}-${d}`;
+    const dk=`${y}-${m}-${d}`;
+    const hol=HOLIDAYS[mk]||'';
+    const closed=CLOSED[mk]||'';
+    const teiji=BASE_TEIJI[mk]||'';
+    const tsushin=BASE_TSUSHIN[mk]||'';
+    const extras=DB.events[dk]||[];
+    const hasPark=hasParkBooking(y,m,d);
+    const isSun=dow===0,isSat=dow===6;
+    const bg=hol||isSun?'bg-hol':isSat?'bg-sat':closed?'bg-hol':'';
+    const nc=hol||isSun?'ps':isSat?'psa':'pn';
+    let inner=`<span class="print-dn ${nc}">${d}</span>`;
+    if(hol)inner+=`<span class="print-tag pt-cl">${hol}</span>`;
+    else if(closed)inner+=`<span class="print-tag pt-cl">${closed}</span>`;
+    if(teiji)inner+=`<span class="print-tag pt-te">${teiji}</span>`;
+    if(tsushin)inner+=`<span class="print-tag pt-ts">${tsushin}</span>`;
+    extras.forEach(ev=>{
+      const cls=ev.type==='teiji'?'pt-te':ev.type==='tsushin'?'pt-ts':ev.type==='sustina'?'pt-su':'pt-cl';
+      const tStr=ev.start_time?` ${ev.start_time}${ev.end_time?'〜'+ev.end_time:''}`:'' ;
+      inner+=`<span class="print-tag ${cls}">${ev.text}${tStr}</span>`;
+    });
+    if(hasPark)inner+=`<div class="print-pk"></div>`;
+    html+=`<div class="print-day ${bg}">${inner}</div>`;
+  }
+  html+=`</div></div>`;
+  return html;
+}
+
+function buildPrintLegend(){
+  return `<div class="print-legend">
+    <div style="display:flex;align-items:center;gap:2px;font-size:7pt;color:#556"><div style="width:8px;height:8px;border-radius:1px;background:#fde8e8;border:0.5px solid #f5a0a0;flex-shrink:0"></div>閉館・休日</div>
+    <div style="display:flex;align-items:center;gap:2px;font-size:7pt;color:#556"><div style="width:8px;height:8px;border-radius:1px;background:#fff3cd;border:0.5px solid #e6c800;flex-shrink:0"></div>定時制行事</div>
+    <div style="display:flex;align-items:center;gap:2px;font-size:7pt;color:#556"><div style="width:8px;height:8px;border-radius:1px;background:#d4edda;border:0.5px solid #7ecf9c;flex-shrink:0"></div>通信制行事</div>
+    <div style="display:flex;align-items:center;gap:2px;font-size:7pt;color:#556"><div style="width:8px;height:8px;border-radius:1px;background:#e8d5f5;border:0.5px solid #b07ecf;flex-shrink:0"></div>サスティナ秋田</div>
+    <div style="display:flex;align-items:center;gap:2px;font-size:7pt;color:#556"><div style="width:8px;height:8px;border-radius:50%;background:#1d9e75;flex-shrink:0"></div>駐車場予約あり</div>
+  </div>`;
+}
+
 function doPrint(){
   if(_selectedPrintMonths.size===0){alert('印刷する月を1つ以上選択してください');return;}
   closePrintModal();
 
-  // Show/hide month blocks based on selection
-  PRINT_MONTHS.forEach(pm=>{
-    const key=`${pm.y}-${pm.m}`;
-    const el=document.getElementById(`m${pm.y}-${pm.m}`);
-    if(!el)return;
-    if(_selectedPrintMonths.has(key)){
-      el.classList.remove('print-hidden');
-    }else{
-      el.classList.add('print-hidden');
-    }
-  });
-
-  // Build print pages: wrap every 2 months in a print-page div
-  const cp=document.getElementById('calPanel');
   const selMonths=PRINT_MONTHS.filter(pm=>_selectedPrintMonths.has(`${pm.y}-${pm.m}`));
-
-  // Set date range in header
+  const isSingle=selMonths.length===1;
   const first=selMonths[0],last=selMonths[selMonths.length-1];
+  const totalPages=isSingle?1:Math.ceil(selMonths.length/2);
+
+  // Remove old print pages
+  const cp=document.getElementById('calPanel');
+  cp.querySelectorAll('.print-page').forEach(p=>p.remove());
+
+  // Set header date range
   document.getElementById('printDateRange').textContent=
-    `${first.y}年${first.label} 〜 ${last.y}年${last.label}`;
+    `${first.y}年${first.label}${selMonths.length>1?' 〜 '+last.y+'年'+last.label:''}`;
 
-  // Group into pairs and wrap with print-page
-  const blocks=selMonths.map(pm=>document.getElementById(`m${pm.y}-${pm.m}`)).filter(Boolean);
-
-  // Create wrapper structure
-  const existingPages=cp.querySelectorAll('.print-page');
-  existingPages.forEach(p=>{
-    while(p.firstChild)p.parentNode.insertBefore(p.firstChild,p);
-    p.remove();
-  });
-
-  for(let i=0;i<blocks.length;i+=2){
+  if(isSingle){
     const page=document.createElement('div');
     page.className='print-page';
-    const row=document.createElement('div');
-    row.className='print-2col';
-    row.appendChild(blocks[i].cloneNode(true));
-    if(blocks[i+1])row.appendChild(blocks[i+1].cloneNode(true));
-    page.appendChild(row);
-    blocks[i].parentNode.insertBefore(page,blocks[i]);
-    blocks[i].style.display='none';
-    if(blocks[i+1])blocks[i+1].style.display='none';
+    page.innerHTML=`
+      <div class="print-doc-header">
+        <span style="font-size:9pt;font-weight:700;color:#1a3a5c">秋田明徳館高校　統合カレンダー　令和8年度</span>
+        <span style="font-size:7pt;color:#8899aa">1 / 1</span>
+      </div>
+      ${buildPrintLegend()}
+      <div class="print-month-wrap">${buildPrintCalBlock(selMonths[0].y,selMonths[0].m,true)}</div>`;
+    cp.prepend(page);
+  }else{
+    for(let i=0;i<selMonths.length;i+=2){
+      const pg=Math.floor(i/2)+1;
+      const m1=selMonths[i],m2=selMonths[i+1];
+      const page=document.createElement('div');
+      page.className='print-page';
+      page.innerHTML=`
+        <div class="print-doc-header">
+          <span style="font-size:9pt;font-weight:700;color:#1a3a5c">秋田明徳館高校　統合カレンダー　令和8年度</span>
+          <span style="font-size:7pt;color:#8899aa">${pg} / ${totalPages}</span>
+        </div>
+        ${buildPrintLegend()}
+        <div class="print-2row">
+          ${buildPrintCalBlock(m1.y,m1.m,false)}
+          ${m2?buildPrintCalBlock(m2.y,m2.m,false):''}
+        </div>`;
+      cp.prepend(page);
+    }
   }
 
   setTimeout(()=>{
     window.print();
-    // Cleanup after print
     setTimeout(()=>{
-      cp.querySelectorAll('.print-page').forEach(p=>{
-        while(p.firstChild){
-          const child=p.firstChild;
-          p.parentNode.insertBefore(child,p);
-        }
-        p.remove();
-      });
-      PRINT_MONTHS.forEach(pm=>{
-        const el=document.getElementById(`m${pm.y}-${pm.m}`);
-        if(el){el.classList.remove('print-hidden');el.style.display='';}
-      });
-    },500);
+      cp.querySelectorAll('.print-page').forEach(p=>p.remove());
+    },800);
   },300);
 }
 
