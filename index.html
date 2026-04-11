@@ -161,31 +161,34 @@ body{font-family:'Hiragino Kaku Gothic Pro','Yu Gothic',Meiryo,sans-serif;backgr
   .app,.main-area{display:block!important}
   .cal-panel{padding:0!important;overflow:visible!important}
   .month-block{display:none!important}
-  .print-doc-header{display:flex!important;align-items:center;justify-content:space-between;padding-bottom:3mm;margin-bottom:3mm;border-bottom:0.5px solid #ccc}
-  .print-legend{display:flex!important;flex-wrap:wrap;gap:6px;margin-bottom:3mm}
-  .print-page{display:flex!important;flex-direction:column;height:277mm;page-break-after:always;padding:0}
+  .print-doc-header{display:flex!important;align-items:center;justify-content:space-between;padding-bottom:2mm;margin-bottom:2mm;border-bottom:0.5px solid #ccc;flex-shrink:0}
+  .print-legend{display:flex!important;flex-wrap:wrap;gap:5px;margin-bottom:2mm;flex-shrink:0}
+  .print-page{display:flex!important;flex-direction:column;height:281mm;page-break-after:always;page-break-inside:avoid;padding:0;overflow:hidden}
   .print-page:last-child{page-break-after:auto}
-  .print-month-wrap{flex:1;min-height:0;display:flex;flex-direction:column}
-  .print-month-wrap.two{flex:1;min-height:0}
-  .print-2row{flex:1;min-height:0;display:flex;flex-direction:column;gap:3mm}
+  .print-month-wrap{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+  .print-2row{flex:1;min-height:0;display:flex;flex-direction:column;gap:2mm;overflow:hidden}
   .print-cal-block{flex:1;min-height:0;display:flex;flex-direction:column;border:0.5px solid #ccc;border-radius:2px;overflow:hidden}
-  .print-cal-hdr{background:#1a3a5c;color:#fff;font-size:9pt;font-weight:700;padding:2mm 3mm;flex-shrink:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .print-cal-hdr{background:#1a3a5c;color:#fff;font-size:9pt;font-weight:700;padding:1.5mm 3mm;flex-shrink:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .print-cal-grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,1fr)}
-  .print-dow{background:#eaf1fb;font-size:7pt;text-align:center;padding:1mm 0;color:#4a6080;font-weight:600;border-bottom:0.5px solid #c8d8ea;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .print-dow{background:#eaf1fb;font-size:8pt;text-align:center;padding:1mm 0;color:#4a6080;font-weight:600;border-bottom:0.5px solid #c8d8ea;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .print-dow.ps{color:#c0392b}.print-dow.psa{color:#2471a3}
-  .print-day{border-right:0.5px solid #eee;border-bottom:0.5px solid #eee;padding:1mm 1.5mm;display:flex;flex-direction:column;gap:0.3mm;overflow:hidden}
+  .print-day{border-right:0.5px solid #eee;border-bottom:0.5px solid #eee;padding:0.8mm 1mm;display:flex;flex-direction:column;gap:0.2mm;overflow:hidden}
   .print-day.bg-hol{background:#fff0f0!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .print-day.bg-sat{background:#f5f9ff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .print-day.bg-sun{background:#fff5f5!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .print-dn{font-weight:700;font-size:8pt;line-height:1.2}
+  .print-dn{font-weight:700;font-size:9pt;line-height:1.2}
   .print-dn.ps{color:#c0392b}.print-dn.psa{color:#2471a3}.print-dn.pn{color:#2c3e50}
-  .print-tag{font-size:5.5pt;padding:0 1mm;border-radius:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.6;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .print-tag{font-size:7pt;padding:0 1mm;border-radius:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.6;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .pt-te{background:#fff3cd;color:#7c5c00}
   .pt-ts{background:#d4edda;color:#145c2a}
   .pt-cl{background:#fde8e8;color:#801515}
   .pt-su{background:#e8d5f5;color:#5b1a8a}
-  .print-pk{width:4px;height:4px;border-radius:50%;background:#1d9e75;flex-shrink:0;align-self:flex-end;margin-top:auto}
-  @page{size:A4 portrait;margin:10mm}
+  .print-pk{width:5px;height:5px;border-radius:50%;background:#1d9e75;flex-shrink:0;align-self:flex-end;margin-top:auto}
+  @page{size:A4 portrait;margin:8mm}
+  .print-page{height:calc(297mm - 16mm);overflow:hidden}
+  .print-cal-block{overflow:hidden}
+  .print-cal-grid{overflow:hidden}
+  .print-day{overflow:hidden;max-height:none}
 }
 /* print modal */
 .print-modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9000;display:flex;align-items:center;justify-content:center}
@@ -1201,11 +1204,11 @@ function buildPrintCalBlock(y,m,isSingle){
 
 function buildPrintLegend(){
   return `<div class="print-legend">
-    <div style="display:flex;align-items:center;gap:2px;font-size:7pt;color:#556"><div style="width:8px;height:8px;border-radius:1px;background:#fde8e8;border:0.5px solid #f5a0a0;flex-shrink:0"></div>閉館・休日</div>
-    <div style="display:flex;align-items:center;gap:2px;font-size:7pt;color:#556"><div style="width:8px;height:8px;border-radius:1px;background:#fff3cd;border:0.5px solid #e6c800;flex-shrink:0"></div>定時制行事</div>
-    <div style="display:flex;align-items:center;gap:2px;font-size:7pt;color:#556"><div style="width:8px;height:8px;border-radius:1px;background:#d4edda;border:0.5px solid #7ecf9c;flex-shrink:0"></div>通信制行事</div>
-    <div style="display:flex;align-items:center;gap:2px;font-size:7pt;color:#556"><div style="width:8px;height:8px;border-radius:1px;background:#e8d5f5;border:0.5px solid #b07ecf;flex-shrink:0"></div>サスティナ秋田</div>
-    <div style="display:flex;align-items:center;gap:2px;font-size:7pt;color:#556"><div style="width:8px;height:8px;border-radius:50%;background:#1d9e75;flex-shrink:0"></div>駐車場予約あり</div>
+    <div style="display:flex;align-items:center;gap:2px;font-size:8pt;color:#556"><div style="width:9px;height:9px;border-radius:1px;background:#fde8e8;border:0.5px solid #f5a0a0;flex-shrink:0"></div>閉館・休日</div>
+    <div style="display:flex;align-items:center;gap:2px;font-size:8pt;color:#556"><div style="width:9px;height:9px;border-radius:1px;background:#fff3cd;border:0.5px solid #e6c800;flex-shrink:0"></div>定時制行事</div>
+    <div style="display:flex;align-items:center;gap:2px;font-size:8pt;color:#556"><div style="width:9px;height:9px;border-radius:1px;background:#d4edda;border:0.5px solid #7ecf9c;flex-shrink:0"></div>通信制行事</div>
+    <div style="display:flex;align-items:center;gap:2px;font-size:8pt;color:#556"><div style="width:9px;height:9px;border-radius:1px;background:#e8d5f5;border:0.5px solid #b07ecf;flex-shrink:0"></div>サスティナ秋田</div>
+    <div style="display:flex;align-items:center;gap:2px;font-size:8pt;color:#556"><div style="width:9px;height:9px;border-radius:50%;background:#1d9e75;flex-shrink:0"></div>駐車場予約あり</div>
   </div>`;
 }
 
@@ -1231,8 +1234,8 @@ function doPrint(){
     page.className='print-page';
     page.innerHTML=`
       <div class="print-doc-header">
-        <span style="font-size:9pt;font-weight:700;color:#1a3a5c">秋田明徳館高校　統合カレンダー　令和8年度</span>
-        <span style="font-size:7pt;color:#8899aa">1 / 1</span>
+        <span style="font-size:10pt;font-weight:700;color:#1a3a5c">秋田明徳館高校　統合カレンダー　令和8年度</span>
+        <span style="font-size:8pt;color:#8899aa">1 / 1</span>
       </div>
       ${buildPrintLegend()}
       <div class="print-month-wrap">${buildPrintCalBlock(selMonths[0].y,selMonths[0].m,true)}</div>`;
@@ -1245,8 +1248,8 @@ function doPrint(){
       page.className='print-page';
       page.innerHTML=`
         <div class="print-doc-header">
-          <span style="font-size:9pt;font-weight:700;color:#1a3a5c">秋田明徳館高校　統合カレンダー　令和8年度</span>
-          <span style="font-size:7pt;color:#8899aa">${pg} / ${totalPages}</span>
+          <span style="font-size:10pt;font-weight:700;color:#1a3a5c">秋田明徳館高校　統合カレンダー　令和8年度</span>
+          <span style="font-size:8pt;color:#8899aa">${pg} / ${totalPages}</span>
         </div>
         ${buildPrintLegend()}
         <div class="print-2row">
