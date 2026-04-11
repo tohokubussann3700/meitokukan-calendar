@@ -163,7 +163,7 @@ body{font-family:'Hiragino Kaku Gothic Pro','Yu Gothic',Meiryo,sans-serif;backgr
   .month-block{display:none!important}
   .print-doc-header{display:flex!important;align-items:center;justify-content:space-between;padding-bottom:2mm;margin-bottom:2mm;border-bottom:0.5px solid #ccc;flex-shrink:0}
   .print-legend{display:flex!important;flex-wrap:wrap;gap:5px;margin-bottom:2mm;flex-shrink:0}
-  .print-page{display:flex!important;flex-direction:column;height:281mm;page-break-after:always;page-break-inside:avoid;padding:0;overflow:hidden}
+  .print-page{display:flex!important;flex-direction:column;min-height:100%;max-height:281mm;page-break-after:always;page-break-inside:avoid;padding:0;overflow:hidden}
   .print-page:last-child{page-break-after:auto}
   .print-month-wrap{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
   .print-2row{flex:1;min-height:0;display:flex;flex-direction:column;gap:2mm;overflow:hidden}
@@ -185,10 +185,8 @@ body{font-family:'Hiragino Kaku Gothic Pro','Yu Gothic',Meiryo,sans-serif;backgr
   .pt-su{background:#e8d5f5;color:#5b1a8a}
   .print-pk{width:5px;height:5px;border-radius:50%;background:#1d9e75;flex-shrink:0;align-self:flex-end;margin-top:auto}
   @page{size:A4 portrait;margin:8mm}
-  .print-page{height:calc(297mm - 16mm);overflow:hidden}
   .print-cal-block{overflow:hidden}
   .print-cal-grid{overflow:hidden}
-  .print-day{overflow:hidden;max-height:none}
 }
 /* print modal */
 .print-modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9000;display:flex;align-items:center;justify-content:center}
@@ -1161,7 +1159,57 @@ function togglePrintMonth(key){
   renderPrintMonthGrid();
 }
 
-function buildPrintCalBlock(y,m,isSingle){
+// 月のコンテンツ高さを推定する関数
+// A4縦281mm、ヘッダー+凡例≒18mm、月ヘッダー≒7mm、曜日行≒6mm
+// 1セル行の高さ（2ヶ月時）≒ 8mm、(1ヶ月時)≒ 14mm
+function estimateMonthRows(y,m){
+  // 最大行数 = 6週
+  const fd=new Date(y,m-1,1).getDay();
+  const days=new Date(y,m,0).getDate();
+  return Math.ceil((fd+days)/7);
+}
+
+function estimateMonthHeight(y,m,isSingle){
+  const rows=estimateMonthRows(y,m);
+  const rowH=isSingle?14:8;
+  const base=7+6; // month header + dow row (mm)
+  // count max event lines per cell
+  const maxEvLines=calcMaxEvLines(y,m);
+  const extraPerRow=maxEvLines>1?(maxEvLines-1)*3.5:0;
+  return base + rows*(rowH+extraPerRow);
+}
+
+function calcMaxEvLines(y,m){
+  let max=0;
+  const days=new Date(y,m,0).getDate();
+  for(let d=1;d<=days;d++){
+    const mk=`${m}-${d}`;
+    const dk=`${y}-${m}-${d}`;
+    let lines=1; // day number
+    if(HOLIDAYS[mk]) lines++;
+    else if(CLOSED[mk]) lines++;
+    if(BASE_TEIJI[mk]) lines++;
+    if(BASE_TSUSHIN[mk]) lines++;
+    const extras=DB.events[dk]||[];
+    lines+=extras.length;
+    if(lines>max)max=lines;
+  }
+  return Math.min(max,4); // cap at 4 to avoid over-estimation
+}
+
+const PAGE_H_MM=281;
+const HEADER_LEGEND_H=20; // doc header + legend (mm)
+const GAP_H=2; // gap between 2 months (mm)
+
+function shouldSplit2Months(m1,m2){
+  // Check if both months fit in one page
+  const h1=estimateMonthHeight(m1.y,m1.m,false);
+  const h2=m2?estimateMonthHeight(m2.y,m2.m,false):0;
+  const total=HEADER_LEGEND_H+h1+(m2?GAP_H+h2:0);
+  return total>PAGE_H_MM;
+}
+
+function buildPrintCalBlock(y,m,isSingle){function buildPrintCalBlock(y,m,isSingle){
   const days=new Date(y,m,0).getDate();
   const fd=new Date(y,m-1,1).getDay();
   const mname=MONTHS.find(mm=>mm[0]===y&&mm[1]===m);
@@ -1217,55 +1265,74 @@ function doPrint(){
   closePrintModal();
 
   const selMonths=PRINT_MONTHS.filter(pm=>_selectedPrintMonths.has(`${pm.y}-${pm.m}`));
-  const isSingle=selMonths.length===1;
-  const first=selMonths[0],last=selMonths[selMonths.length-1];
-  const totalPages=isSingle?1:Math.ceil(selMonths.length/2);
-
-  // Remove old print pages
   const cp=document.getElementById('calPanel');
   cp.querySelectorAll('.print-page').forEach(p=>p.remove());
 
-  // Set header date range
-  document.getElementById('printDateRange').textContent=
-    `${first.y}年${first.label}${selMonths.length>1?' 〜 '+last.y+'年'+last.label:''}`;
+  // Build pages with smart 1-or-2 month decision
+  const pages=[];
+  let i=0;
+  while(i<selMonths.length){
+    const m1=selMonths[i];
+    const m2=selMonths[i+1]||null;
+    if(!m2){
+      // Last single month → always 1 per page (full size)
+      pages.push({months:[m1],single:true});
+      i++;
+    } else {
+      // Check if 2 months fit
+      const split=shouldSplit2Months(m1,m2);
+      if(split){
+        // Too much content → 1 per page each
+        pages.push({months:[m1],single:true});
+        pages.push({months:[m2],single:true});
+        i+=2;
+      } else {
+        pages.push({months:[m1,m2],single:false});
+        i+=2;
+      }
+    }
+  }
 
-  if(isSingle){
+  const totalPages=pages.length;
+
+  pages.forEach((pg,idx)=>{
     const page=document.createElement('div');
     page.className='print-page';
-    page.innerHTML=`
-      <div class="print-doc-header">
-        <span style="font-size:10pt;font-weight:700;color:#1a3a5c">秋田明徳館高校　統合カレンダー　令和8年度</span>
-        <span style="font-size:8pt;color:#8899aa">1 / 1</span>
-      </div>
-      ${buildPrintLegend()}
-      <div class="print-month-wrap">${buildPrintCalBlock(selMonths[0].y,selMonths[0].m,true)}</div>`;
-    cp.prepend(page);
-  }else{
-    for(let i=0;i<selMonths.length;i+=2){
-      const pg=Math.floor(i/2)+1;
-      const m1=selMonths[i],m2=selMonths[i+1];
-      const page=document.createElement('div');
-      page.className='print-page';
+    const pgNum=idx+1;
+    if(pg.single){
       page.innerHTML=`
         <div class="print-doc-header">
           <span style="font-size:10pt;font-weight:700;color:#1a3a5c">秋田明徳館高校　統合カレンダー　令和8年度</span>
-          <span style="font-size:8pt;color:#8899aa">${pg} / ${totalPages}</span>
+          <span style="font-size:8pt;color:#8899aa">${pgNum} / ${totalPages}</span>
+        </div>
+        ${buildPrintLegend()}
+        <div class="print-month-wrap">${buildPrintCalBlock(pg.months[0].y,pg.months[0].m,true)}</div>`;
+    } else {
+      const m1=pg.months[0],m2=pg.months[1];
+      page.innerHTML=`
+        <div class="print-doc-header">
+          <span style="font-size:10pt;font-weight:700;color:#1a3a5c">秋田明徳館高校　統合カレンダー　令和8年度</span>
+          <span style="font-size:8pt;color:#8899aa">${pgNum} / ${totalPages}</span>
         </div>
         ${buildPrintLegend()}
         <div class="print-2row">
           ${buildPrintCalBlock(m1.y,m1.m,false)}
-          ${m2?buildPrintCalBlock(m2.y,m2.m,false):''}
+          ${buildPrintCalBlock(m2.y,m2.m,false)}
         </div>`;
-      cp.prepend(page);
     }
-  }
+    cp.prepend(page);
+  });
+
+  // Reverse order so months are in correct order
+  const allPages=Array.from(cp.querySelectorAll('.print-page'));
+  allPages.reverse().forEach(p=>cp.prepend(p));
 
   setTimeout(()=>{
     window.print();
     setTimeout(()=>{
       cp.querySelectorAll('.print-page').forEach(p=>p.remove());
     },800);
-  },300);
+  },350);
 }
 
 // ===== 設定 =====
