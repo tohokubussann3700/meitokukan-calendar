@@ -712,8 +712,10 @@ function setEvType(t){_evType=t;if(selectedDate)renderPanel(...selectedDate);}
 async function saveEvent(dk){
   const el=document.getElementById('evText'),text=el?el.value.trim():'';
   if(!text)return;
-  const startT=document.getElementById('evStart')?document.getElementById('evStart').value:'';
-  const endT=document.getElementById('evEnd')?document.getElementById('evEnd').value:'';
+  const evStartEl=document.getElementById('evStart');
+  const evEndEl=document.getElementById('evEnd');
+  const startT=evStartEl?evStartEl.value:'';
+  const endT=evEndEl?evEndEl.value:'';
   const btn=document.getElementById('evSaveBtn');
   if(btn){btn.disabled=true;btn.textContent='保存中...';}
   setSyncStatus('loading','保存中...');
@@ -818,7 +820,6 @@ function renderAccountList(){
   const cur=sel.value;
   sel.innerHTML='<option value="">-- 選択してください --</option>'+
     ACCOUNTS.map(a=>`<option value="${a}"${a===cur?' selected':''}>${a}</option>`).join('');
-
 }
 
 function renderLotList(){
@@ -914,7 +915,27 @@ let _miniCalMonth={start:{y:2026,m:4},end:{y:2026,m:4}};
 
 // --- ドラムロール ---
 const DRUM_TIMES=['未設定',...TIMES];
-let _drumStart=0, _drumEnd=0; // index into DRUM_TIMES
+let _drumStart=0, _drumEnd=0;
+
+function buildTimeSelect(id, selectedVal){
+  const el=document.getElementById(id);
+  if(!el)return;
+  const opts=['<option value="">未設定</option>',
+    ...TIMES.map(t=>`<option value="${t}"${t===selectedVal?' selected':''}>${t}</option>`)
+  ].join('');
+  el.innerHTML=opts;
+  if(selectedVal)el.value=selectedVal;
+}
+
+function getSelectedTime(pcId, drumIdx){
+  const isMobile=window.innerWidth<=600;
+  if(isMobile){
+    return DRUM_TIMES[drumIdx]==='未設定'?'':DRUM_TIMES[drumIdx];
+  }else{
+    const el=document.getElementById(pcId);
+    return el?el.value:'';
+  }
+}
 
 function buildDrum(wrapperId, selectedIdx, onChange){
   const wrap=document.getElementById(wrapperId);
@@ -1073,8 +1094,12 @@ function openEventModal(prefillDate=null,editId=null,editDk=null){
   // Init drums
   _drumStart=startT?DRUM_TIMES.indexOf(startT):0; if(_drumStart<0)_drumStart=0;
   _drumEnd=endT?DRUM_TIMES.indexOf(endT):0; if(_drumEnd<0)_drumEnd=0;
+  // Mobile: drum roll
   buildDrum('startDrum',_drumStart,i=>{_drumStart=i;});
   buildDrum('endDrum',_drumEnd,i=>{_drumEnd=i;});
+  // PC: animated select
+  buildTimeSelect('startTimeSelect', startT);
+  buildTimeSelect('endTimeSelect', endT);
   document.getElementById('modalEvText').value=text;
   document.getElementById('modalTitle').textContent=editId?'行事を編集':'行事を追加';
   document.getElementById('modalSaveBtn').textContent=editId?'更新':'追加';
@@ -1104,8 +1129,8 @@ async function saveEventFromModal(){
   if(!text){document.getElementById('modalEvText').focus();return;}
   if(!_modalStartKey){alert('開始日を選択してください');return;}
   const endKey=(_modalEndKey&&_modalEndKey!==_modalStartKey)?_modalEndKey:'';
-  const startT=DRUM_TIMES[_drumStart]==='未設定'?'':DRUM_TIMES[_drumStart];
-  const endT=DRUM_TIMES[_drumEnd]==='未設定'?'':DRUM_TIMES[_drumEnd];
+  const startT=getSelectedTime('startTimeSelect',_drumStart);
+  const endT=getSelectedTime('endTimeSelect',_drumEnd);
   const dates=getDatesInRange(_modalStartKey,endKey||_modalStartKey);
   const btn=document.getElementById('modalSaveBtn');
   btn.disabled=true;btn.textContent='保存中...';
@@ -1155,7 +1180,6 @@ function openPrintModal(){
   else _selectedPrintMonths.add('2026-4');
   renderPrintMonthGrid();
   document.getElementById('printModal').style.display='flex';
-
 }
 
 function closePrintModal(){document.getElementById('printModal').style.display='none';}
@@ -1358,6 +1382,38 @@ function doPrint(){
 }
 
 // ===== 設定 =====
+const PALETTE_COLORS=[
+  '#e05555','#e07355','#e09955','#d4b84a','#a8c44a',
+  '#4ab86e','#4ab8a8','#4a8ed4','#5555e0','#9955e0',
+  '#d455c8','#1a3a5c','#3a5c1a','#5c3a1a','#555555'
+];
+
+function buildColorPalette(selectedColor){
+  const pal=document.getElementById('colorPalette');
+  if(!pal)return;
+  pal.innerHTML=PALETTE_COLORS.map(c=>`
+    <div class="palette-dot${c===selectedColor?' selected':''}"
+      style="background:${c}"
+      onclick="selectPaletteColor('${c}')"
+      title="${c}"></div>`).join('');
+}
+
+function selectPaletteColor(c){
+  document.getElementById('settingColor').value=c;
+  document.getElementById('colorPreview').style.background=c;
+  document.getElementById('settingColorHex').textContent=c;
+  document.querySelectorAll('.palette-dot').forEach(d=>{
+    d.classList.toggle('selected',d.style.background===hexToRgb(c)||d.getAttribute('onclick').includes(c));
+  });
+}
+
+function hexToRgb(hex){
+  const r=parseInt(hex.slice(1,3),16);
+  const g=parseInt(hex.slice(3,5),16);
+  const b=parseInt(hex.slice(5,7),16);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
 function openSettings(){
   const acctData=ACCOUNT_DATA[currentAccount]||{};
   document.getElementById('settingName').value=currentAccount;
@@ -1365,6 +1421,7 @@ function openSettings(){
   document.getElementById('settingColor').value=col;
   document.getElementById('colorPreview').style.background=col;
   document.getElementById('settingColorHex').textContent=col;
+  buildColorPalette(col);
   document.getElementById('profileMsg').textContent='';
   document.getElementById('pwMsg').textContent='';
   document.getElementById('pwCurrent1').value='';
